@@ -1,0 +1,76 @@
+
+\newcommand{\Organization}{FZI - Forschungszentrum Informatik}
+\newcommand{\Department}{Embedded Systems and Sensors Engineering}
+\newcommand{\Prof}{Prof. Dr.-Ing. Eric Sax} 
+\newcommand{\mytitle}{Titel}
+\newcommand{\Worktype}{Bachelorarbeit / Masterarbeit}
+\newcommand{\Verfasser}{(B.Sc.) / (M.Sc.) Max Mustermann}
+\newcommand{\StartDatum}{TT.MM.JJJJ}
+\newcommand{\EndDatum}{TT.MM.JJJJ}
+\newcommand{\Betreuer}{Dipl.-Ing./M.Sc.  Max Mustermann}
+
+
+\renewcommand{\maketitle}{\pagestyle{empty}\begin{titlepage}
+\begin{tikzpicture}[overlay]
+\node [anchor=north ] at (8,0.5) {%
+\includegraphics[width=.13\textwidth]{00_intro/fzi-logo_transparenz.png}
+};
+\node  at (8,-13) {%
+\begin{minipage}{1.1\textwidth}
+	\centering \Large \sffamily \textbf{%
+		\Organization\\
+	}
+	\centering \large \sffamily{
+		\Department\\
+	}	
+	\vspace{3cm}
+	\centering \LARGE \sffamily \textbf{
+		\mytitle\\
+	}
+	\vspace{2.5cm}
+	\centering \Large \sffamily \textbf{
+		\Worktype\\
+	}
+	\vspace{1.5cm}
+	\centering \large \sffamily {
+		\iflanguage{english}
+			{presented by\\}
+			{vorgelegt von\\}
+			\vspace{0.25cm}
+		\Verfasser\\
+	}
+	\vspace{2.5cm}
+	\centering \normalsize  \sffamily {
+	\begin{tabular}{@{}ll@{}}
+		\iflanguage{english}
+			{
+				Date: & \qquad \EndDatum\\
+				Advisor: & \qquad \Prof\\
+				Preceptor: & \qquad \Betreuer\\
+			}
+			{
+				Datum: & \qquad \EndDatum\\
+				Referent: & \qquad \Prof\\
+				Betreuer: & \qquad \Betreuer\\
+			}
+	\end{tabular}
+	}
+\end{minipage}
+};
+\end{tikzpicture}
+\end{titlepage}
+
+
+\begin{titlepage}
+	\vspace*{\fill}
+	{\Large\textbf{Erkl\"arung}\par}\bigskip%
+	Hiermit erkläre ich, dass ich die vorliegende Masterarbeit selbstständig verfasst und keine anderen als die angegebenen Hilfsmittel und Quellen benutzt habe, die wörtlich oder inhaltlich übernommenen Stellen als solche kenntlich gemacht und die Regeln zur Sicherung guter wissenschaftlicher Praxis im Karlsruher Institut für Technologie (KIT) in der jeweils gültigen Fassung beachtet habe.\par\bigskip%
+	Karlsruhe, den \EndDatum\par\vspace{5ex}%
+\end{titlepage}
+
+
+
+}
+
+\maketitle 
+

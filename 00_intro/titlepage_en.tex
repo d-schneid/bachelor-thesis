@@ -1,0 +1,74 @@
+
+\newcommand{\Organization}{FZI - Forschungszentrum Informatik}
+\newcommand{\Department}{Embedded Systems and Sensors Engineering}
+\newcommand{\Prof}{Prof. Dr.-Ing. Eric Sax} 
+\newcommand{\mytitle}{Titel}
+\newcommand{\Worktype}{Bachelor / Master Thesis}
+\newcommand{\Verfasser}{(B.Sc.) / (M.Sc.) Max Mustermann}
+\newcommand{\StartDatum}{TT.MM.JJJJ}
+\newcommand{\EndDatum}{TT.MM.JJJJ}
+\newcommand{\Betreuer}{Dipl.-Ing./M.Sc.  Max Mustermann}
+
+
+\renewcommand{\maketitle}{\pagestyle{empty}\begin{titlepage}
+\begin{tikzpicture}[overlay]
+\node [anchor=north ] at (8,0.5) {%
+\includegraphics[width=.13\textwidth]{00_intro/fzi-logo_transparenz.png}
+};
+\node  at (8,-13) {%
+\begin{minipage}{1.1\textwidth}
+	\centering \Large \sffamily \textbf{%
+		\Organization\\
+	}
+	\centering \large \sffamily{
+		\Department\\
+	}	
+	\vspace{3cm}
+	\centering \LARGE \sffamily \textbf{
+		\mytitle\\
+	}
+	\vspace{2.5cm}
+	\centering \Large \sffamily \textbf{
+		\Worktype\\
+	}
+	\vspace{1.5cm}
+	\centering \large \sffamily {
+		\iflanguage{english}
+			{presented by\\}
+			{vorgelegt von\\}
+			\vspace{0.25cm}
+		\Verfasser\\
+	}
+	\vspace{2.5cm}
+	\centering \normalsize  \sffamily {
+	\begin{tabular}{@{}ll@{}}
+		\iflanguage{english}
+			{
+				Date: & \qquad \EndDatum\\
+				Advisor: & \qquad \Prof\\
+				Preceptor: & \qquad \Betreuer\\
+			}
+			{
+				Datum: & \qquad \EndDatum\\
+				Referent: & \qquad \Prof\\
+				Betreuer: & \qquad \Betreuer\\
+			}
+	\end{tabular}
+	}
+\end{minipage}
+};
+\end{tikzpicture}
+\end{titlepage}
+
+\begin{titlepage}
+	\vspace*{\fill}
+	{\Large\textbf{Declaration}\par}\bigskip%
+	I hereby declare that I wrote my Master's Thesis on my own and that I have followed the regulations relating to good scientific practice of the Karlsruhe Institute of Technology (KIT) in its latest form. I did not use any unacknowledged sources or means and I marked all references I used literally or by content. \par\bigskip%
+	Karlsruhe, \EndDatum\par\vspace{5ex}%
+\end{titlepage}
+
+
+}
+
+\maketitle 
+

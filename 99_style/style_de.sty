@@ -1,0 +1,92 @@
+\usepackage[ngerman]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,bm,trfsigns,upgreek}		% Mathe
+\usepackage{lipsum} % lorem ipsum
+\usepackage[babel,german=quotes]{csquotes}
+%%========================================================================Fonts
+%Adobe fonts
+%\usepackage[utopia]{mathdesign}
+\usepackage[bitstream-charter]{mathdesign}
+%\usepackage[garamond]{mathdesign} %needs installed garamond fonts
+%and the required sans serif fonts
+%\usepackage[scaled]{berasans}
+\usepackage[scaled]{helvet}
+%\renewcommand{\sfdefault}{phv} %helvetica like font
+%\usepackage{avant}
+%\usepackage{tgheros}
+\usepackage{microtype}
+%%========================================================================Fonts
+\usepackage{xcolor}										% color
+\usepackage{tikz}											% tikz figures
+\tikzset{>=stealth} % all arrows in latex style
+\usepackage{booktabs} %nice tables
+%%Koma Zeugs
+\addtokomafont{disposition}{\sffamily\mdseries}
+\addtokomafont{caption}{\sffamily\small}
+\setkomafont{captionlabel}{\sffamily\small\bfseries}
+%Tilepage
+\addtokomafont{subject}{\sffamily\mdseries}
+\addtokomafont{title}{\mdseries}
+\addtokomafont{subtitle}{\Large\sffamily}
+\usepackage{prettyref}
+%%% Für Kapitel %%%
+\newrefformat{cha}{Kap.~\ref{#1}}
+%%% Für Abschnitte %%%
+\newrefformat{sec}{Abschn.~\ref{#1}}
+%%% Für Abbildungen %%%
+\newrefformat{fig}{Abb.~\ref{#1}}
+%%% Für Tabellen %%%
+\newrefformat{tab}{Tab.~\ref{#1}}
+%%% Für Gleichungen %%%
+\newrefformat{eqn}{Gl.~\ref{#1}}
+%%% Für Code %%%
+\newrefformat{lst}{Lst.~\ref{#1}}
+%\usepackage[doi=false,url=false,isbn=false, backend=bibtex8,citestyle=alphabetic,bibstyle=alphabetic,hyperref, sorting=none]{biblatex}
+\usepackage[backend=bibtex8, citestyle=numeric, bibstyle=numeric, hyperref, sorting=none]{biblatex}
+\renewcommand{\bibfont}{\small}
+
+%%% Von Johannes ergänzt
+\usepackage{listings}
+\lstloadlanguages{Matlab,C}
+\lstset{% general command to set parameter(s)
+basicstyle=\sffamily\footnotesize, % print whole listing small
+keywordstyle=\sffamily\footnotesize\bfseries, % ubold black keywords
+identifierstyle=, % nothing happens
+commentstyle=\sffamily\footnotesize\slshape, % green comments
+stringstyle=\sffamily\footnotesize, % typewriter type for strings
+showstringspaces=false, % no special string spaces
+breakatwhitespace=true,         % sets if automatic breaks should only happen at whitespace
+breaklines=true,                 % sets automatic line breaking
+captionpos=b,                    % sets the caption-position to bottom
+aboveskip=20pt,
+belowskip=0pt,
+numbers=left,
+numberstyle=\sffamily\footnotesize,
+stepnumber=1,
+numbersep=10pt,
+showspaces=false,
+showtabs=false,
+frame=lines,
+morecomment=[l]{\%},
+float=htbp,
+numberbychapter=true
+}
+
+%\RequirePackage{subcaption}
+%\RequirePackage[hang,bf,small]{subfigure}
+
+%----------------------------------------
+\addbibresource{98_bibliography/bibliography.bib}
+%---------------------------------------
+		
+%% hyperlinks in PDF
+\usepackage[backref=false, colorlinks, breaklinks, hyperfootnotes, plainpages=false, pdfpagelabels]{hyperref}
+%link color
+		\definecolor{color}{rgb}{0,0,0}								
+		\hypersetup{linkcolor=color, menucolor=color, urlcolor=color, 								citecolor=color, anchorcolor=color}
+\usepackage{subfigure} 
+%\usepackage{tabularx}
+%\usepackage{algpseudocode}
+\usepackage[]{algorithm2e}
+\usepackage{pdflscape}
