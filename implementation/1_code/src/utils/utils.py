@@ -2,11 +2,9 @@ import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from tslearn.utils.utils import\
-    (to_time_series as tslearn_to_time_series,
-     to_time_series_dataset as tslearn_to_time_series_dataset)
 
 
+# so that all data paths can be given relative to the directory "0_data"
 DATA_DIR = "../../0_data"
 
 
@@ -52,8 +50,9 @@ def constant_segmentation(ts_size, window_size):
                          "'ts_size' ({0} > {1}).".format(window_size, ts_size))
 
     bounds = np.arange(0, ts_size + 1, window_size)
+    remainder = ts_size % window_size
     # Do not cut off last points if it is a significant number
-    if ts_size % window_size > window_size / 2:
+    if remainder > window_size / 2:
         bounds = np.append(bounds, ts_size)
     start = bounds[:-1]
     end = bounds[1:]
@@ -61,42 +60,37 @@ def constant_segmentation(ts_size, window_size):
     return start, end, num_segments
 
 
-# TODO: Error handling (e.g. if path does not exist)
-# TODO: comments on expected datatypse, input, output
 def load_parquet_to_df(path):
-    path = Path(os.path.join(DATA_DIR, path))
+    """
+    Load Parquet file for univariate and multivariate time series dataset.
 
-    df = pd.DataFrame()
+    :param path: string
+        Path to the Parquet file to be read. Relative to the directory "0_data".
+    :return:
+        dataframe of shape (ts_size, num_ts)
+    :raises:
+        ValueError: If the time series dataset contains NaN. Either some time
+                    series of the dataset contain NaN or some time series of
+                    the dataset do not have the same size.
+        Exception: on any failure, e.g. if the given path does not exist or
+                   the files are corrupted.
+    """
+
+    error_msg = "Time series dataset contains NaN. Either some time series " \
+                "of the dataset contain NaN or some time series of the " \
+                "dataset do not have the same size."
+
+    path = Path(os.path.join(DATA_DIR, path))
 
     if os.path.isdir(path):
         df = pd.concat((pd.read_parquet(parquet_file, engine="fastparquet")
                         for parquet_file in path.glob("*.parquet")), axis=1)
-    elif os.path.isfile(path):
-        df = pd.read_parquet(path, engine="fastparquet")
+        if df.isnull().values.any():
+            raise ValueError(error_msg)
+        return df
+
+    df = pd.read_parquet(path, engine="fastparquet")
+    if df.isnull().values.any():
+        raise ValueError(error_msg)
 
     return df
-
-
-# TODO: comment and error handling
-def from_df(df, dim=1):
-    # dim is number of dimensions per time series, all equal dimensions
-    # default are univariate time series
-    quotient, remainder = divmod(len(df.columns), dim)
-    if remainder != 0:
-        raise ValueError("number of columns must be divisable by 'dim'"
-                         "'({0} % {1} != 0).".format(len(df.columns), dim))
-
-    ts_dataset = []
-    for i in range(0, len(df.columns), dim):
-        ts = df.iloc[:, i:i+dim].to_numpy()
-        ts_dataset.append(ts)
-
-    return np.stack(ts_dataset)
-
-
-def to_df(X):
-    df_set = []
-    num_ts = X.shape[0]
-    for i_ts in range(num_ts):
-        df_set.append(pd.DataFrame(X[i_ts]))
-    return pd.concat(df_set, axis=1)
