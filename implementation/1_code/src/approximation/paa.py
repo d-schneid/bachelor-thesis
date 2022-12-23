@@ -5,6 +5,8 @@ from utils.utils import constant_segmentation
 
 
 class PAA:
+    # expects time series to be normalized
+
     # TODO: inherit from something like BaseApproximator
 
     def __init__(self, window_size=1):
@@ -33,7 +35,9 @@ class PAA:
         for segment in np.array_split(df_copy, num_segments):
             segment_means.append(segment.mean(axis=0))
 
-        df_paa = pd.DataFrame(data=np.array(segment_means), columns=df_ts.columns)
+        df_paa = pd.DataFrame(data=np.array(segment_means),
+                              index=range(num_segments),
+                              columns=df_ts.columns)
         return df_paa
 
     def inverse_transform(self, df_paa, ts_size):

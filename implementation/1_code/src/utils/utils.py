@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from scipy.stats import zscore
 
 
 # so that all data paths can be given relative to the directory "0_data"
@@ -94,3 +95,7 @@ def load_parquet_to_df(path):
         raise ValueError(error_msg)
 
     return df
+
+
+def z_normalize(df_ts):
+    return zscore(df_ts)
