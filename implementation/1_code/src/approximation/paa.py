@@ -26,13 +26,10 @@ class PAA:
 
         ts_size = df_ts.shape[0]
         start, end, num_segments = constant_segmentation(ts_size, self.window_size)
-        remainder = ts_size % self.window_size
-        df_copy = df_ts
-        if remainder <= self.window_size / 2:
-            df_copy = df_ts.drop(df_ts.tail(remainder).index)
-
         segment_means = []
-        for segment in np.array_split(df_copy, num_segments):
+
+        for i in range(num_segments):
+            segment = df_ts.iloc[start[i]:end[i], :]
             segment_means.append(segment.mean(axis=0))
 
         df_paa = pd.DataFrame(data=np.array(segment_means),
@@ -56,11 +53,12 @@ class PAA:
 
         start, end, num_segments = constant_segmentation(ts_size, self.window_size)
         df_inv = pd.DataFrame(columns=df_paa.columns, index=range(ts_size))
-        for i in range(df_paa.shape[0]):
+        for i in range(num_segments):
             df_inv.iloc[start[i]:end[i]] = df_paa.iloc[i]
 
         remainder = ts_size % self.window_size
-        if remainder <= self.window_size / 2:
+        # remaining points at the end get the PAA value of the last segment
+        if 0 < remainder <= self.window_size / 2:
             df_inv.iloc[-remainder:] = df_paa.iloc[-1]
 
         return df_inv

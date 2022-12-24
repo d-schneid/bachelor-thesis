@@ -97,5 +97,6 @@ def load_parquet_to_df(path):
     return df
 
 
+# TODO: Handling error: normalizing same value
 def z_normalize(df_ts):
     return zscore(df_ts)
