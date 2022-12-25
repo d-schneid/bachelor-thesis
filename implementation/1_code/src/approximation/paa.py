@@ -1,22 +1,41 @@
 import numpy as np
 import pandas as pd
 
-from utils.utils import constant_segmentation
+from utils.utils import constant_segmentation, interpolate_segments
 
 
+# TODO: inherit from something like BaseApproximator
 class PAA:
-    # expects time series to be normalized
+    """
+    Piecewise Aggregate Approximation (PAA).
 
-    # TODO: inherit from something like BaseApproximator
+    :param window_size: int (default = 1)
+        Length of the window to segment the time series.
+
+    Examples
+    --------
+    paa = PAA(window_size=2)
+    df_ts = np.array([[1,2,3],
+                      [4,5,6],
+                      [7,8,9],
+                      [10,11,12]])
+    df_paa = paa.transform(df_ts)
+    print(df_paa)
+    [[2.5, 3.5, 4.5],
+     [8.5, 9.5, 10.5]]
+    """
 
     def __init__(self, window_size=1):
-        self.window_size = window_size
         # TODO: super parent class
+        self.window_size = window_size
 
     def transform(self, df_ts):
         """
         Reduce the dimensionality of each time series by transforming it into
         its PAA representation.
+        It does not modify the given time series dataset before computation,
+        such as normalization. Therefore, the modification of the time series
+        dataset (e.g. normalization) is the responsibility of the user.
 
         :param df_ts: dataframe of shape (ts_size, num_ts)
             The time series dataset.
@@ -29,7 +48,7 @@ class PAA:
         segment_means = []
 
         for i in range(num_segments):
-            segment = df_ts.iloc[start[i]:end[i], :]
+            segment = df_ts.iloc[start[i]:end[i]]
             segment_means.append(segment.mean(axis=0))
 
         df_paa = pd.DataFrame(data=np.array(segment_means),
@@ -37,7 +56,7 @@ class PAA:
                               columns=df_ts.columns)
         return df_paa
 
-    def inverse_transform(self, df_paa, ts_size):
+    def inv_transform(self, df_paa, ts_size):
         """
         Approximate the original time series dataset by transforming its
         PAA representations into a time series dataset with the same size
@@ -51,14 +70,4 @@ class PAA:
             dataframe of shape (ts_size, num_ts)
         """
 
-        start, end, num_segments = constant_segmentation(ts_size, self.window_size)
-        df_inv = pd.DataFrame(columns=df_paa.columns, index=range(ts_size))
-        for i in range(num_segments):
-            df_inv.iloc[start[i]:end[i]] = df_paa.iloc[i]
-
-        remainder = ts_size % self.window_size
-        # remaining points at the end get the PAA value of the last segment
-        if 0 < remainder <= self.window_size / 2:
-            df_inv.iloc[-remainder:] = df_paa.iloc[-1]
-
-        return df_inv
+        return interpolate_segments(df_paa, ts_size, self.window_size)

@@ -18,9 +18,9 @@ def constant_segmentation(ts_size, window_size):
     :param window_size: int
         The size of the segmentation window.
     :return:
-        start : array
+        start : np.array
             The index of the lower segment bound (inclusive) for each window.
-        end : array
+        end : np.array
             The index of the upper segment bound (exclusive) for each window.
         num_segments : int
             The number of segments.
@@ -29,9 +29,9 @@ def constant_segmentation(ts_size, window_size):
     --------
     start, end, num_segments = segmentation(ts_size=11, window_size=3)
     print(start)
-    [0 3 6 9]
+    [0, 3, 6, 9]
     print(end)
-    [ 3  6  9 11]
+    [3, 6, 9, 11]
     print(num_segments)
     4
     """
@@ -64,16 +64,20 @@ def constant_segmentation(ts_size, window_size):
 def load_parquet_to_df(path):
     """
     Load Parquet file for univariate and multivariate time series dataset.
+    If the given path belongs to a file, the data of this file are loaded.
+    If the given path belongs to a directory, the data of all files located in
+    this directory are loaded.
 
     :param path: string
-        Path to the Parquet file to be read. Relative to the directory "0_data".
+        Path to the Parquet file or directory to be read. Relative to the
+        directory "0_data".
     :return:
         dataframe of shape (ts_size, num_ts)
     :raises:
         ValueError: If the time series dataset contains NaN. Either some time
                     series of the dataset contain NaN or some time series of
                     the dataset do not have the same size.
-        Exception: on any failure, e.g. if the given path does not exist or
+        Exception: On any failure, e.g. if the given path does not exist or
                    the files are corrupted.
     """
 
@@ -97,6 +101,52 @@ def load_parquet_to_df(path):
     return df
 
 
-# TODO: Handling error: normalizing same value
 def z_normalize(df_ts):
+    """
+    Z-normalize the given time series dataset.
+
+    :param df_ts: dataframe of shape (ts_size, num_ts)
+        The time series dataset that shall be z-normalized.
+    :return:
+        dataframe of shape (ts_size, num_ts)
+    :raises:
+        ValueError: If at least one time series consists of points that all
+        have the same value.
+    """
+
+    fst_row = df_ts.values[0]
+    if True in (fst_row == df_ts.values).all(axis=0):
+        raise ValueError("Z-normalization does not work, because at least one"
+                         "time series consists of points that all have the"
+                         "same value.")
     return zscore(df_ts)
+
+
+def interpolate_segments(df_segments, ts_size, window_size):
+    """
+    Approximate the original time series dataset by interpolating the segmented
+    representations into a time series dataset with the same size by assigning
+    each point the value of its segment.
+
+    :param df_segments: dataframe of shape (num_segments, num_ts)
+        The segmented representation of the time series dataset.
+    :param ts_size: int
+        The size of the original time series.
+    :param window_size: int
+        The size of the segments with which the given segmented representations
+        were created.
+    :return:
+        dataframe of shape (ts_size, num_ts)
+    """
+
+    start, end, num_segments = constant_segmentation(ts_size, window_size)
+    df_interpolate = pd.DataFrame(index=range(ts_size), columns=df_segments.columns)
+    for i in range(num_segments):
+        df_interpolate.iloc[start[i]:end[i]] = df_segments.iloc[i]
+
+    remainder = ts_size % window_size
+    # remaining points at the end get the value of the last segment
+    if 0 < remainder <= window_size / 2:
+        df_interpolate.iloc[-remainder:] = df_segments.iloc[-1]
+
+    return df_interpolate
