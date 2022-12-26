@@ -81,6 +81,86 @@ class SAX:
         df_inv = interpolate_segments(df_mapped, ts_size, window_size)
         return df_inv
 
+    def _distance(self, df_alphabet_idx, ts_size, sax_idx):
+        """
+        Compute pairwise distances between the given SAX representation and all
+        other remaining SAX representations.
+
+        :param ts_size: int
+            The size of the original time series.
+        :param df_alphabet_idx: dataframe of shape (num_segments, num_ts)
+            The SAX representations mapped on its alphabet indices.
+        :param sax_idx: int
+            The column number of the current SAX representation, respectively
+            of its alphabetical indexes mapping in the given 'df_sax' dataframe.
+        :return:
+            pd.Series of shape (sax_idx+1,)
+        """
+
+        sax_repr = df_alphabet_idx.iloc[:, sax_idx]
+        # only SAX representations ahead are needed, since SAX distance is
+        # symmetric and other distances were already computed
+        sax_compare = df_alphabet_idx.iloc[:, sax_idx+1:]
+
+        sax_diff = sax_compare.sub(sax_repr, axis=0)
+        # implements first case of distances between single SAX symbols
+        # use NaN values in df_abs to indicate resulting value of 0
+        df_abs = sax_compare[abs(sax_diff) > 1]
+
+        sax_repr = sax_repr.to_numpy()
+        sax_repr = sax_repr.reshape((sax_repr.shape[0], 1))
+        # implements second case of distances between single SAX symbols
+        # do not consider NaN values, since they will be set to 0
+        df_max_idx = np.maximum(df_abs, sax_repr) - 1
+        df_min_idx = np.minimum(df_abs, sax_repr)
+
+        mapping = dict(zip(range(self.breakpoints.size), self.breakpoints))
+        df_max_idx.replace(to_replace=mapping, inplace=True)
+        df_min_idx.replace(to_replace=mapping, inplace=True)
+        df_diff_breakpts = df_max_idx - df_min_idx
+
+        # contains symbol-wise distances between current SAX representation
+        # and all other remaining SAX representations
+        df_symb_distances = df_diff_breakpts.fillna(0)
+        # implements actual SAX distance (MINDIST)
+        squared_sums = df_symb_distances.pow(2).sum()
+        num_segments = df_alphabet_idx.shape[0]
+        sax_distances = np.sqrt((ts_size / num_segments) * squared_sums)
+
+        return sax_distances
+
+    def distance(self, df_sax, ts_size):
+        """
+        Compute pairwise distances between SAX representations.
+
+        :param df_sax: dataframe of shape (num_segments, num_ts)
+            The SAX representation of the time series dataset.
+        :param ts_size: int
+            The size of the original time series.
+        :return: dataframe of shape (num_ts, num_ts)
+            The returned dataframe is symmetric with zeros on the main diagonal,
+            since the SAX distance is symmetric and positive definite.
+        """
+
+        if df_sax.shape[1] <= 1:
+            raise ValueError("For pairwise distance computation, at least"
+                             "two SAX representations need to be given.")
+
+        mapping = dict(zip(self.alphabet, range(self.alphabet_size)))
+        df_alphabet_idx = df_sax.replace(to_replace=mapping)
+        df_sax_distances = pd.DataFrame(data=0, index=df_sax.columns, columns=df_sax.columns)
+        num_ts = df_sax.shape[1]
+
+        # last SAX representation has already been compared to all others
+        for sax_idx in range(num_ts-1):
+            # distances between current SAX representation and all other remaining SAX representations
+            sax_distances = self._distance(df_alphabet_idx, ts_size, sax_idx)
+            # use symmetry of resulting dataframe by building up a lower triangular matrix
+            df_sax_distances.iloc[sax_idx+1:, sax_idx] = sax_distances
+
+        # all values on main diagonal are zero due to initialization
+        return df_sax_distances + df_sax_distances.T
+
 
 class SymbolMapping(ABC):
     """
