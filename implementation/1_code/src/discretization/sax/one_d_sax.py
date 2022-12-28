@@ -1,62 +1,13 @@
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
 
-from discretization.sax import SAX
 from utils.utils import constant_segmentation, interpolate_segments
+from discretization.sax.sax import SAX
+from discretization.sax.abstract_sax import (AbstractSAX,
+                                             NUM_ALPHABET_LETTERS, breakpoints)
 
 
-NUM_ALPHABET_LETTERS = 26
 NUMERATOR_VAR_SLOPE = 0.03
-
-# TODO: inherit from something like BaseApproximator
-class OneDSAX:
-
-    def __init__(self, alphabet_size_avg=3, alphabet_size_slope=3, var_slope=None):
-        if NUM_ALPHABET_LETTERS < alphabet_size_avg or alphabet_size_slope < 1:
-            raise ValueError(f"The size of the alphabet needs to be between "
-                             f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
-        # TODO: super parent class
-        self.alphabet_size_avg = alphabet_size_avg
-        letters_avg = [chr(letter) for letter
-                       in range(ord('a'), ord('a') + self.alphabet_size_avg)]
-        self.alphabet_avg = np.array(letters_avg)
-        self.breakpoints_avg = _breakpoints(self.alphabet_size_avg)
-
-        self.alphabet_size_slope = alphabet_size_slope
-        letters_slope = [chr(letter) for letter
-                         in range(ord('a'), ord('a') + self.alphabet_size_slope)]
-        self.alphabet_slope = np.array(letters_slope)
-        # for slope different variance of Gaussian distribution is possible
-        self.var_slope = var_slope
-        # for breakpoints of slope, window size need to be known
-        # breakpoints will be determined later when window size is known
-
-    def _fit(self, window_size):
-        # need to be here, because at construction, window size not known
-        if self.var_slope is None:
-            self.var_slope = np.sqrt(NUMERATOR_VAR_SLOPE / window_size)
-        self.breakpoints_slope = _breakpoints(self.alphabet_size_slope, scale=self.var_slope)
-
-    def transform(self, df_norm, df_paa, window_size):
-        df_avg = SAX(self.alphabet_size_avg).transform(df_paa)
-
-        # slope for each segment for each time series
-        slopes = _compute_slopes(df_norm, df_paa, window_size)
-        self._fit(window_size)
-        alphabet_slope_idx = np.searchsorted(self.breakpoints_slope, slopes, side="right")
-        df_slope = pd.DataFrame(data=self.alphabet_slope[alphabet_slope_idx],
-                                index=slopes.index, columns=slopes.columns)
-
-        return df_avg + df_slope
-
-
-# TODO: extract in abstract base class
-def _breakpoints(alphabet_size, scale=1):
-    quantiles = [numerator / alphabet_size for numerator in range(1, alphabet_size)]
-    # z-values of quantiles of Gaussian distribution with variance 'scale'
-    breakpoints = norm.ppf(quantiles, scale=scale)
-    return breakpoints
 
 
 def _compute_slopes(df_norm, df_paa, window_size):
@@ -90,3 +41,39 @@ def _compute_slopes(df_norm, df_paa, window_size):
     slopes_denumerator = pd.Series(data=sums_denumerator)
     slopes = slopes_numerator.divide(slopes_denumerator, axis=0)
     return slopes
+
+
+class OneDSAX(AbstractSAX):
+
+    def __init__(self, alphabet_size_avg=3, alphabet_size_slope=3, var_slope=None):
+        if NUM_ALPHABET_LETTERS < alphabet_size_slope < 1:
+            raise ValueError(f"The size of an alphabet needs to be between "
+                             f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
+        super().__init__(alphabet_size_avg=alphabet_size_avg)
+
+        self.alphabet_size_slope = alphabet_size_slope
+        letters_slope = [chr(letter) for letter
+                         in range(ord('a'), ord('a') + self.alphabet_size_slope)]
+        self.alphabet_slope = np.array(letters_slope)
+        # for slope different variance of Gaussian distribution is possible
+        self.var_slope = var_slope
+        # for breakpoints of slope, window size need to be known
+        # breakpoints will be determined later when window size is known
+
+    def _fit(self, window_size):
+        # need to be here, because at construction, window size not known
+        if self.var_slope is None:
+            self.var_slope = np.sqrt(NUMERATOR_VAR_SLOPE / window_size)
+        self.breakpoints_slope = breakpoints(self.alphabet_size_slope, scale=self.var_slope)
+
+    def transform(self, df_norm, df_paa, window_size):
+        df_avg = SAX(self.alphabet_size_avg).transform(df_paa)
+
+        # slope for each segment for each time series
+        slopes = _compute_slopes(df_norm, df_paa, window_size)
+        self._fit(window_size)
+        alphabet_slope_idx = np.searchsorted(self.breakpoints_slope, slopes, side="right")
+        df_slope = pd.DataFrame(data=self.alphabet_slope[alphabet_slope_idx],
+                                index=slopes.index, columns=slopes.columns)
+
+        return df_avg + df_slope

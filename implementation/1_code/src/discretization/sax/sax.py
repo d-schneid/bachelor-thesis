@@ -3,14 +3,11 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from scipy.stats import norm
 
+from discretization.sax.abstract_sax import AbstractSAX
 from utils.utils import interpolate_segments
 
 
-NUM_ALPHABET_LETTERS = 26
-
-
-# TODO: inherit from something like BaseApproximator
-class SAX:
+class SAX(AbstractSAX):
     """
     Symbolic Aggregate Approximation (SAX).
 
@@ -23,18 +20,7 @@ class SAX:
     """
 
     def __init__(self, alphabet_size=3):
-        if NUM_ALPHABET_LETTERS < alphabet_size < 1:
-            raise ValueError(f"The size of the alphabet needs to be between "
-                             f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
-        # TODO: super parent class
-        self.alphabet_size = alphabet_size
-        letters = [chr(letter) for letter
-                   in range(ord('a'), ord('a') + self.alphabet_size)]
-        self.alphabet = np.array(letters)
-
-        quantiles = np.linspace(0, 1, self.alphabet_size+1)[1:-1]
-        # z-value of quantiles of standard normal distribution
-        self.breakpoints = norm.ppf(quantiles)
+        super().__init__(alphabet_size_avg=alphabet_size)
 
     def transform(self, df_paa):
         """
@@ -52,8 +38,8 @@ class SAX:
         """
 
         # index i satisfies: breakpoints[i-1] <= paa_value < breakpoints[i]
-        alphabet_idx = np.searchsorted(self.breakpoints, df_paa, side="right")
-        df_sax = pd.DataFrame(data=self.alphabet[alphabet_idx],
+        alphabet_idx = np.searchsorted(self.breakpoints_avg, df_paa, side="right")
+        df_sax = pd.DataFrame(data=self.alphabet_avg[alphabet_idx],
                               index=df_paa.index, columns=df_paa.columns)
         return df_sax
 
@@ -77,7 +63,7 @@ class SAX:
             dataframe of shape (ts_size, num_ts)
         """
 
-        df_mapped = symbol_mapping.get_mapped(df_sax, self.alphabet, self.breakpoints)
+        df_mapped = symbol_mapping.get_mapped(df_sax, self.alphabet_avg, self.breakpoints_avg)
         df_inv = interpolate_segments(df_mapped, ts_size, window_size)
         return df_inv
 
@@ -114,7 +100,7 @@ class SAX:
         df_max_idx = np.maximum(df_abs, sax_repr) - 1
         df_min_idx = np.minimum(df_abs, sax_repr)
 
-        mapping = dict(zip(range(self.breakpoints.size), self.breakpoints))
+        mapping = dict(zip(range(self.breakpoints_avg.size), self.breakpoints_avg))
         df_max_idx.replace(to_replace=mapping, inplace=True)
         df_min_idx.replace(to_replace=mapping, inplace=True)
         df_diff_breakpts = df_max_idx - df_min_idx
@@ -146,7 +132,7 @@ class SAX:
             raise ValueError("For pairwise distance computation, at least"
                              "two SAX representations need to be given.")
 
-        mapping = dict(zip(self.alphabet, range(self.alphabet_size)))
+        mapping = dict(zip(self.alphabet_avg, range(self.alphabet_size_avg)))
         df_alphabet_idx = df_sax.replace(to_replace=mapping)
         df_sax_distances = pd.DataFrame(data=0, index=df_sax.columns, columns=df_sax.columns)
         num_ts = df_sax.shape[1]

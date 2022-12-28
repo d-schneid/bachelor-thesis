@@ -4,7 +4,6 @@ import pandas as pd
 from utils.utils import constant_segmentation, interpolate_segments
 
 
-# TODO: inherit from something like BaseApproximator
 class PAA:
     """
     Piecewise Aggregate Approximation (PAA).
@@ -26,7 +25,6 @@ class PAA:
     """
 
     def __init__(self, window_size=1):
-        # TODO: super parent class
         self.window_size = window_size
 
     def transform(self, df_ts):
