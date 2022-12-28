@@ -24,8 +24,8 @@ class SAX:
 
     def __init__(self, alphabet_size=3):
         if NUM_ALPHABET_LETTERS < alphabet_size < 1:
-            raise ValueError("The size of the alphabet needs to be between"
-                             "1 (inclusive) and 26 (inclusive)")
+            raise ValueError(f"The size of the alphabet needs to be between "
+                             f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
         # TODO: super parent class
         self.alphabet_size = alphabet_size
         letters = [chr(letter) for letter
