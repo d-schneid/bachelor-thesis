@@ -22,6 +22,12 @@ class PAA:
     print(df_paa)
     [[2.5, 3.5, 4.5],
      [8.5, 9.5, 10.5]]
+
+    References
+    ----------
+    [1] Keogh, E., Chakrabarti, K., Pazzani, M., & Mehrotra, S. (2001).
+    Dimensionality reduction for fast similarity search in large time series
+    databases. Knowledge and information Systems, 3(3), 263-286.
     """
 
     def __init__(self, window_size=1):

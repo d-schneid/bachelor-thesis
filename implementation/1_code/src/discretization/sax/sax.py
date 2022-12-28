@@ -17,6 +17,12 @@ class SAX(AbstractSAX):
         latest.
     :raises:
         ValueError: If the size of the alphabet is above 26 or below 1.
+
+    References
+    ----------
+    [1] J. Lin, E. Keogh, L. Wei, et al. Experiencing SAX: a novel symbolic
+    representation of time series. Data Mining and Knowledge Discovery,
+    2007. vol. 15(107).
     """
 
     def __init__(self, alphabet_size=3):
@@ -37,7 +43,7 @@ class SAX(AbstractSAX):
             dataframe of shape (num_segments, num_ts)
         """
 
-        # index i satisfies: breakpoints[i-1] <= paa_value < breakpoints[i]
+        # index i satisfies: breakpoints_avg[i-1] <= paa_value < breakpoints_avg[i]
         alphabet_idx = np.searchsorted(self.breakpoints_avg, df_paa, side="right")
         df_sax = pd.DataFrame(data=self.alphabet_avg[alphabet_idx],
                               index=df_paa.index, columns=df_paa.columns)
@@ -45,9 +51,9 @@ class SAX(AbstractSAX):
 
     def inv_transform(self, df_sax, ts_size, window_size, symbol_mapping):
         """
-        Approximate the original time series dataset by transforming its
-        SAX representations into a time series dataset with the same size
-        by assigning each point the symbol value of its segment.
+        Approximate the original time series dataset by transforming its SAX
+        representations into a time series dataset with the same size by
+        assigning each point the symbol value of its segment.
 
         :param df_sax: dataframe of shape (num_segments, num_ts)
             The SAX representation of the time series dataset.
@@ -71,6 +77,8 @@ class SAX(AbstractSAX):
         """
         Compute pairwise distances between the given SAX representation and all
         other remaining SAX representations.
+        The computation is based on the formula for the 'MINDIST' between two
+        SAX words given in [1].
 
         :param ts_size: int
             The size of the original time series.
@@ -184,19 +192,26 @@ class IntervalNormMedian(SymbolMapping):
         The number of letters of the alphabet that was used for creating the
         SAX representations whose symbols shall be mapped by this mapping
         strategy.
+    :param var: float (default = 1)
+        The variance of the Gaussian distribution used to compute the
+        breakpoints for the intervals for the quantization of raw values.
+        Usually, this value only deviates from the set default value for the
+        quantization of the slope values in the 1d-SAX discretization method.
     """
 
-    def __init__(self, alphabet_size):
+    def __init__(self, alphabet_size, var=1):
         super().__init__()
+        self.alphabet_size = alphabet_size
+        self.var = var
         # breakpoint intervals together with their respective medians make up
         # 2 * alphabet_size intervals
         # then, the odd bounds are the quantiles for the medians within the
         # respective breakpoint interval
-        median_quantiles = [bound / (2 * alphabet_size)
-                            for bound in range(1, 2 * alphabet_size, 2)]
+        median_quantiles = [bound / (2 * self.alphabet_size)
+                            for bound in range(1, 2 * self.alphabet_size, 2)]
         # compute z-value of median quantiles within the respective breakpoint
         # interval for standard normal distribution in ascending order
-        self.interval_medians = norm.ppf(median_quantiles)
+        self.interval_medians = norm.ppf(median_quantiles, scale=self.var)
 
     def get_mapped(self, df_sax, alphabet, breakpoints=None):
         mapping = dict(zip(alphabet, self.interval_medians))
