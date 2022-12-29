@@ -1,8 +1,10 @@
 import re
+import warnings
 import numpy as np
 import pandas as pd
 
 from utils.utils import constant_segmentation, interpolate_segments
+from discretization.sax.symbol_mapping import ValuePoints
 from discretization.sax.sax import SAX
 from discretization.sax.abstract_sax import (AbstractSAX,
                                              NUM_ALPHABET_LETTERS, breakpoints)
@@ -13,7 +15,7 @@ from discretization.sax.abstract_sax import (AbstractSAX,
 NUMERATOR_VAR_SLOPE = 0.03
 
 
-def _compute_slopes(df_norm, df_paa, window_size):
+def compute_slopes(df_norm, df_paa, window_size):
     """
     Compute the slope of the linear function fit by linear regression for each
     segment in each time series.
@@ -164,7 +166,7 @@ class OneDSAX(AbstractSAX):
 
         df_avg = SAX(self.alphabet_size_avg).transform(df_paa)
 
-        slope_values = _compute_slopes(df_norm, df_paa, window_size)
+        slope_values = compute_slopes(df_norm, df_paa, window_size)
         self._set_breakpoints_slope(window_size)
         # index i satisfies: breakpoints_slope[i-1] <= slope_value < breakpoints_slope[i]
         alphabet_slope_idx = np.searchsorted(self.breakpoints_slope, slope_values, side="right")
@@ -202,9 +204,18 @@ class OneDSAX(AbstractSAX):
         :param symbol_mapping_slope: SymbolMapping
             The symbol mapping strategy that determines the symbol values for
             the 1d-SAX symbols into which the segment slopes were quantized.
+            Caveat: In case of one of the 'ValuePoints' strategies, the results
+            might only be meaningful if the segment slopes ('compute_slopes'
+            function) were used for its initialization.
         :return:
             dataframe of shape (ts_size, num_ts)
         """
+
+        if isinstance(symbol_mapping_slope, ValuePoints):
+            warnings.warn("Make sure you used the segment slopes for "
+                          "initializing the chosen 'symbol_mapping_slope' "
+                          "strategy. Otherwise, the results might not be "
+                          "meaningful.")
 
         ts_size = df_norm.shape[0]
         start, end, num_segments = constant_segmentation(ts_size, window_size)
