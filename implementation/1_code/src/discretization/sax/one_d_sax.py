@@ -114,7 +114,7 @@ class OneDSAX(AbstractSAX):
     """
 
     def __init__(self, alphabet_size_avg=3, alphabet_size_slope=3, var_slope=None):
-        if NUM_ALPHABET_LETTERS < alphabet_size_slope < 1:
+        if alphabet_size_slope > NUM_ALPHABET_LETTERS or alphabet_size_slope < 1:
             raise ValueError(f"The size of an alphabet needs to be between "
                              f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
         super().__init__(alphabet_size_avg=alphabet_size_avg)

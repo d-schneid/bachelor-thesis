@@ -31,6 +31,8 @@ class PAA:
     """
 
     def __init__(self, window_size=1):
+        if window_size < 1:
+            raise ValueError("The size of the window must be greater than 0")
         self.window_size = window_size
 
     def transform(self, df_ts):

@@ -30,7 +30,7 @@ def breakpoints(alphabet_size, scale=1):
 class AbstractSAX(ABC):
 
     def __init__(self, alphabet_size_avg=3):
-        if NUM_ALPHABET_LETTERS < alphabet_size_avg < 1:
+        if alphabet_size_avg > NUM_ALPHABET_LETTERS or alphabet_size_avg < 1:
             raise ValueError(f"The size of an alphabet needs to be between "
                              f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
         self.alphabet_size_avg = alphabet_size_avg
