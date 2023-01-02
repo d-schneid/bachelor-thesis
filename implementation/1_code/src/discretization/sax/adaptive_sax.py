@@ -1,11 +1,15 @@
 import pandas as pd
 import numpy as np
 import math
+from sklearn import metrics
 
 from discretization.sax.sax import SAX
+from discretization.sax.graphics import plot_eval_k_means
 
 
-THRESHOLD_K_MEANS = 0.00000000000001
+# the k-means algorithm of the aSAX stops when the relative change of the
+# ssq error is below this threshold
+THRESHOLD_K_MEANS = 1e-09
 
 
 def _find_min_above_threshold(paa_values, threshold):
@@ -31,7 +35,8 @@ def _find_min_above_threshold(paa_values, threshold):
 
 def _map_interval_means(df_paa, df_breakpoints, df_interval_means):
     """
-    Assign each PAA point its respective interval mean, respectively centroid.
+    Assign each PAA point its respective interval mean, respectively centroid
+    and its respective interval index, respectively cluster id.
 
     :param df_paa: dataframe of shape (num_segments, num_ts)
         The PAA representations that get assigned their respective interval
@@ -42,20 +47,26 @@ def _map_interval_means(df_paa, df_breakpoints, df_interval_means):
         The interval means based on the given PAA values for each time series.
         The number of intervals corresponds to the alphabet size.
     :return:
-        dataframe of shape (num_segments, num_ts)
+        mapped_interval_means: dataframe of shape (num_segments, num_ts)
+        clustering: dataframe of shape (num_segments, num_ts)
     """
 
-    mapped_interval_means = []
+    mapped_interval_means, clustering = [], []
     for i in range(df_paa.shape[1]):
         # assign each PAA point its respective interval index
         breakpoint_idx = pd.Series(
             np.searchsorted(df_breakpoints.iloc[:, i], df_paa.iloc[:, i],
                             side="right"), index=df_paa.index)
+        clustering.append(breakpoint_idx)
+
         mapping = df_interval_means.iloc[:, i].to_dict()
         # assign each PAA point its respective interval mean (centroid)
         breakpoint_idx.replace(to_replace=mapping, inplace=True)
         mapped_interval_means.append(breakpoint_idx)
-    return pd.concat(mapped_interval_means, axis=1, keys=df_paa.columns)
+
+    mapped_interval_means = pd.concat(mapped_interval_means, axis=1, keys=df_paa.columns)
+    clustering = pd.concat(clustering, axis=1, keys=df_paa.columns)
+    return mapped_interval_means, clustering
 
 
 def _check_interval_means(interval_point_means, paa_values, breakpoints):
@@ -155,6 +166,77 @@ def _compute_interval_means(df_paa, df_breakpoints):
     return pd.concat(interval_means, axis=1)
 
 
+def _compute_eval_metrics(df_paa, df_clustering):
+    """
+    Compute the average Silhouette coefficient, Calinski-Harabasz index, and
+    Davis-Bouldin index across all given PAA representations and their
+    respective clustering. These metrics evaluate the internal goodness of the
+    given clustering.
+
+    :param df_paa: dataframe of shape (num_segments, num_ts)
+        The PAA representations whose clustering shall be evaluated.
+    :param df_clustering: dataframe of shape (num_segments, num_ts)
+        The individual clustering of each given PAA representation based on the
+        respective interval index (cluster id) of each PAA point.
+    :return:
+        float, float, float
+    """
+
+    num_ts = df_paa.shape[1]
+    silhouette, calinski_harabasz, davies_bouldin = 0, 0, 0
+    for i in range(num_ts):
+        paa_values = df_paa.iloc[:, i].to_frame()
+        clustering = df_clustering.iloc[:, i]
+        silhouette += metrics.silhouette_score(paa_values, clustering)
+        calinski_harabasz += metrics.calinski_harabasz_score(paa_values, clustering)
+        davies_bouldin += metrics.davies_bouldin_score(paa_values, clustering)
+
+    return silhouette/num_ts, calinski_harabasz/num_ts, davies_bouldin/num_ts
+
+
+def eval_k_means(df_paa, min_alphabet_size, max_alphabet_size):
+    """
+    Evaluate the k-means algorithm of the aSAX for different sizes of its
+    alphabet. The evaluation is run for alphabet sizes from 'min_alphabet_size'
+    (inclusive) to 'max_alphabet_size' (inclusive).
+    The evaluation results will be plotted for visual inspection. This supports
+    the parameter-free usage of the aSAX discretization method by selecting an
+    appropriate alphabet size according to the plotted evaluation results.
+
+    :param df_paa: dataframe of shape (num_segments, num_ts)
+        The PAA representations that shall be (individually) clustered with the
+        k-means algorithm of the aSAX.
+    :param min_alphabet_size: int
+        The lower bound (inclusive) of the aSAX alphabet size for that the
+        evaluation shall be run.
+    :param max_alphabet_size: int
+        The upper bound (inclusive) of the aSAX alphabet size for that the
+        evaluation shall be run.
+    :return:
+        None
+    :raises:
+        ValueError: If 'min_alphabet_size' > 'max_alphabet_size'.
+        ValueError: If 'min_alphabet_size' < 1.
+        ValueError: If 'max_alphabet_size' > 26 (number of letters in Latin
+                    alphabet).
+    """
+
+    if min_alphabet_size > max_alphabet_size:
+        raise ValueError("The maximum alphabet size for evaluation needs to "
+                         "be at least as large as the minimum alphabet size")
+
+    ssq_error, silhouette, calinski_harabasz, davies_bouldin = [], [], [], []
+    for k in range(min_alphabet_size, max_alphabet_size + 1):
+        a_sax = AdaptiveSAX(alphabet_size=k)
+        ssq_err, silh, c_h, d_b = a_sax.k_means(df_paa, eval_mode=True)
+        ssq_error.append(ssq_err)
+        silhouette.append(silh)
+        calinski_harabasz.append(c_h)
+        davies_bouldin.append(d_b)
+    plot_eval_k_means(ssq_error, silhouette, calinski_harabasz,
+                      davies_bouldin, min_alphabet_size, max_alphabet_size)
+
+
 class AdaptiveSAX(SAX):
     """
     Adaptive Symbolic Aggreagate Approximation (aSAX).
@@ -198,19 +280,27 @@ class AdaptiveSAX(SAX):
         df_breakpoints = pd.DataFrame([self.init_breakpoints for _ in range(num_ts)]).T
         return ssq_error, df_breakpoints
 
-    def _k_means(self, df_paa):
+    def k_means(self, df_paa, eval_mode=False):
         """
         Compute the breakpoints of the respective intervals for the SAX
         discretization of each given PAA representation with the k-means
         algorithm based on the given PAA values. The intervals correspond to
         the clusters and the interval means to the centroids of the clusters in
         the k-means terminology.
+        Can be run in evaluation mode ('eval_mode') where internal evaluation
+        metrics (SSQ Error, Silhouette coefficient, Calinski-Harabasz index,
+        Davies-Bouldin index) of the final clustering are computed averaged
+        across the given PAA representations.
 
         :param df_paa: dataframe of shape (num_segments, num_ts)
             The PAA representations that shall be discretized based on the
             computed breakpoints, respectively intervals.
+        :param eval_mode: bool (default = False)
+            The indication if the k-means algorithm shall be run in evaluation
+            mode or not.
         :return:
-            dataframe of shape (num_breakpoints, num_ts)
+            'eval_mode' = False: dataframe of shape (num_breakpoints, num_ts)
+            'eval_mode' = True: float, float, float, float
         """
 
         ssq_error, df_breakpoints = self._init_k_means(df_paa.shape[1])
@@ -221,11 +311,18 @@ class AdaptiveSAX(SAX):
             df_breakpoints = (df_interval_means + df_interval_means.shift(-1)) / 2
             # last row is NaN due to shift
             df_breakpoints.drop(df_breakpoints.tail(1).index, inplace=True)
-            # assign each PAA point its interval mean (centroid)
-            df_mapped_interval_means = _map_interval_means(df_paa, df_breakpoints,
-                                                           df_interval_means)
+            # assign each PAA point its interval mean (centroid) and interval
+            # index (cluster id)
+            df_mapped_interval_means, df_clustering = _map_interval_means(
+                df_paa, df_breakpoints, df_interval_means)
+
             ssq_error_new = (df_paa - df_mapped_interval_means).pow(2).sum(axis=0)
-            if all(((ssq_error - ssq_error_new) / ssq_error) < THRESHOLD_K_MEANS):
+            if all((abs(ssq_error - ssq_error_new) / ssq_error) < THRESHOLD_K_MEANS):
+                if eval_mode:
+                    silhouette, calinski_harabasz, davies_bouldin =\
+                        _compute_eval_metrics(df_paa, df_clustering)
+                    return ssq_error_new.mean(), silhouette,\
+                        calinski_harabasz, davies_bouldin
                 break
             ssq_error = ssq_error_new
 
@@ -248,7 +345,7 @@ class AdaptiveSAX(SAX):
             dataframe of shape (num_segments, num_ts)
         """
 
-        df_breakpoints = self._k_means(df_paa)
+        df_breakpoints = self.k_means(df_paa)
         a_sax_reprs = []
         for i in range(df_paa.shape[1]):
             self.breakpoints_avg = np.array(df_breakpoints.iloc[:, i])
