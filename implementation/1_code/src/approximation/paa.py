@@ -10,18 +10,8 @@ class PAA:
 
     :param window_size: int (default = 1)
         Length of the window to segment the time series.
-
-    Examples
-    --------
-    paa = PAA(window_size=2)
-    df_ts = np.array([[1,2,3],
-                      [4,5,6],
-                      [7,8,9],
-                      [10,11,12]])
-    df_paa = paa.transform(df_ts)
-    print(df_paa)
-    [[2.5, 3.5, 4.5],
-     [8.5, 9.5, 10.5]]
+    :raises:
+        ValueError: If the size of the window is below 1.
 
     References
     ----------

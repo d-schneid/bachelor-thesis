@@ -33,7 +33,7 @@ def _find_min_above_threshold(paa_values, threshold):
     return min(filtered_paa_values)
 
 
-def _map_interval_means(df_paa, df_breakpoints, df_interval_means):
+def _map_intervals(df_paa, df_breakpoints, df_interval_means):
     """
     Assign each PAA point its respective interval mean, respectively centroid
     and its respective interval index, respectively cluster id.
@@ -260,7 +260,7 @@ class AdaptiveSAX(SAX):
         # initialize the k-means algorithm always with the breakpoints used
         # in the classic SAX (equiprobable regions of the standard normal
         # distribution)
-        self.init_breakpoints = self.breakpoints_avg
+        self.init_breakpoints = self.breakpoints
 
     def _init_k_means(self, num_ts):
         """
@@ -313,7 +313,7 @@ class AdaptiveSAX(SAX):
             df_breakpoints.drop(df_breakpoints.tail(1).index, inplace=True)
             # assign each PAA point its interval mean (centroid) and interval
             # index (cluster id)
-            df_mapped_interval_means, df_clustering = _map_interval_means(
+            df_mapped_interval_means, df_clustering = _map_intervals(
                 df_paa, df_breakpoints, df_interval_means)
 
             ssq_error_new = (df_paa - df_mapped_interval_means).pow(2).sum(axis=0)
@@ -348,7 +348,7 @@ class AdaptiveSAX(SAX):
         df_breakpoints = self.k_means(df_paa)
         a_sax_reprs = []
         for i in range(df_paa.shape[1]):
-            self.breakpoints_avg = np.array(df_breakpoints.iloc[:, i])
+            self.breakpoints = np.array(df_breakpoints.iloc[:, i])
             # transform column by column, because of individual breakpoints
             df_sax = super().transform(df_paa.iloc[:, i].to_frame())
             a_sax_reprs.append(df_sax)

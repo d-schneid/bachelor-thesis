@@ -29,15 +29,15 @@ def breakpoints(alphabet_size, scale=1):
 # TODO: comment
 class AbstractSAX(ABC):
 
-    def __init__(self, alphabet_size_avg=3):
-        if alphabet_size_avg > NUM_ALPHABET_LETTERS or alphabet_size_avg < 1:
+    def __init__(self, alphabet_size=3):
+        if alphabet_size > NUM_ALPHABET_LETTERS or alphabet_size < 1:
             raise ValueError(f"The size of an alphabet needs to be between "
                              f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
-        self.alphabet_size_avg = alphabet_size_avg
-        letters_avg = [chr(letter) for letter
-                       in range(ord('a'), ord('a') + self.alphabet_size_avg)]
-        self.alphabet_avg = np.array(letters_avg)
-        self.breakpoints_avg = breakpoints(self.alphabet_size_avg)
+        self.alphabet_size = alphabet_size
+        letters = [chr(letter) for letter
+                   in range(ord('a'), ord('a') + self.alphabet_size)]
+        self.alphabet = np.array(letters)
+        self.breakpoints = breakpoints(self.alphabet_size)
 
     # TODO: extraxct SAX transformation of PAA as it is done in both, SAX and 1d-SAX
     # but then, class is instantiable, because it does not have an abstract method

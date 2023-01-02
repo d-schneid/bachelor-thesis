@@ -117,7 +117,10 @@ class OneDSAX(AbstractSAX):
         if alphabet_size_slope > NUM_ALPHABET_LETTERS or alphabet_size_slope < 1:
             raise ValueError(f"The size of an alphabet needs to be between "
                              f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
-        super().__init__(alphabet_size_avg=alphabet_size_avg)
+        super().__init__(alphabet_size=alphabet_size_avg)
+        self.alphabet_size_avg = self.alphabet_size
+        self.alphabet_avg = self.alphabet
+        self.breakpoints_avg = self.breakpoints
 
         self.alphabet_size_slope = alphabet_size_slope
         letters_slope = [chr(letter) for letter

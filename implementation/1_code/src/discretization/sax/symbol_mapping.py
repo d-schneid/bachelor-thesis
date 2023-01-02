@@ -119,7 +119,7 @@ class ValuePoints(SymbolMapping):
         self.df_norm = df_norm
 
     def get_mapped(self, df_sax, alphabet, breakpoints):
-        df_mapped = pd.DataFrame(index=df_sax.index, columns=df_sax.columns)
+        mapped = []
         idx = 0
         # iteratively for each time series, because different means in
         # breakpoint intervals for each
@@ -132,10 +132,10 @@ class ValuePoints(SymbolMapping):
             mapping = {}
             for alphabet_idx, symbol_value in symbol_values.items():
                 mapping.update({alphabet[alphabet_idx]: symbol_value})
-            df_mapped.iloc[:, idx] = df_sax.iloc[:, idx].replace(to_replace=mapping)
+            mapped.append(df_sax.iloc[:, idx].replace(to_replace=mapping))
             idx += 1
 
-        return df_mapped
+        return pd.concat(mapped, axis=1)
 
     @abstractmethod
     def get_symbol_values(self, grouped_by_symbol):

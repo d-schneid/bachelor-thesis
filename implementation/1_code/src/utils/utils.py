@@ -103,7 +103,8 @@ def load_parquet_to_df(path):
 
 def z_normalize(df_ts):
     """
-    Z-normalize the given time series dataset.
+    Z-normalize the given time series dataset. All time series in the dataset
+    are z-normalized individually.
 
     :param df_ts: dataframe of shape (ts_size, num_ts)
         The time series dataset that shall be z-normalized.

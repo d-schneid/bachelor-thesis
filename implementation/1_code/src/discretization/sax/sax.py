@@ -24,7 +24,7 @@ class SAX(AbstractSAX):
     """
 
     def __init__(self, alphabet_size=3):
-        super().__init__(alphabet_size_avg=alphabet_size)
+        super().__init__(alphabet_size=alphabet_size)
 
     def transform(self, df_paa):
         """
@@ -41,9 +41,9 @@ class SAX(AbstractSAX):
             dataframe of shape (num_segments, num_ts)
         """
 
-        # index i satisfies: breakpoints_avg[i-1] <= paa_value < breakpoints_avg[i]
-        alphabet_idx = np.searchsorted(self.breakpoints_avg, df_paa, side="right")
-        df_sax = pd.DataFrame(data=self.alphabet_avg[alphabet_idx],
+        # index i satisfies: breakpoints[i-1] <= paa_value < breakpoints[i]
+        alphabet_idx = np.searchsorted(self.breakpoints, df_paa, side="right")
+        df_sax = pd.DataFrame(data=self.alphabet[alphabet_idx],
                               index=df_paa.index, columns=df_paa.columns)
         return df_sax
 
@@ -67,7 +67,7 @@ class SAX(AbstractSAX):
             dataframe of shape (ts_size, num_ts)
         """
 
-        df_mapped = symbol_mapping.get_mapped(df_sax, self.alphabet_avg, self.breakpoints_avg)
+        df_mapped = symbol_mapping.get_mapped(df_sax, self.alphabet, self.breakpoints)
         df_inv = interpolate_segments(df_mapped, ts_size, window_size)
         return df_inv
 
@@ -106,7 +106,7 @@ class SAX(AbstractSAX):
         df_max_idx = np.maximum(df_abs, sax_repr) - 1
         df_min_idx = np.minimum(df_abs, sax_repr)
 
-        mapping = dict(zip(range(self.breakpoints_avg.size), self.breakpoints_avg))
+        mapping = dict(zip(range(self.breakpoints.size), self.breakpoints))
         df_max_idx.replace(to_replace=mapping, inplace=True)
         df_min_idx.replace(to_replace=mapping, inplace=True)
         df_diff_breakpts = df_max_idx - df_min_idx
@@ -138,7 +138,7 @@ class SAX(AbstractSAX):
             raise ValueError("For pairwise distance computation, at least"
                              "two SAX representations need to be given.")
 
-        mapping = dict(zip(self.alphabet_avg, range(self.alphabet_size_avg)))
+        mapping = dict(zip(self.alphabet, range(self.alphabet_size)))
         df_alphabet_idx = df_sax.replace(to_replace=mapping)
         df_sax_distances = pd.DataFrame(data=0, index=df_sax.columns, columns=df_sax.columns)
         num_ts = df_sax.shape[1]
