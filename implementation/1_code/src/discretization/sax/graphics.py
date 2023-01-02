@@ -185,8 +185,9 @@ def plot_sax_symbols(df_norm, df_sax, alphabet_avg, window_size, num_column,
     plt.show()
 
 
-def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_one_d_sax_inv,
-                      sax_alphabet_size, one_d_sax_alphabet_size_avg,
+def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
+                      df_one_d_sax_inv, window_size, sax_alphabet_size,
+                      a_sax_alphabet_size, one_d_sax_alphabet_size_avg,
                       one_d_sax_alphabet_size_slope, num_column):
     """
     Plot an original normalized time series, its PAA representation, its SAX
@@ -201,11 +202,21 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_one_d_sax_inv,
     :param df_sax_inv: dataframe of shape (ts_size, num_ts)
         The inverse SAX representations of the given normalized time series
         dataset.
+    :param df_a_sax_inv: dataframe of shape (ts_size, num_ts)
+        The inverse Adaptive SAX representations of the given normalized time
+        series dataset.
     :param df_one_d_sax_inv: dataframe of shape (ts_size, num_ts)
         The inverse 1d-SAX representations of the given normalized time series
         dataset.
+    :param window_size: int
+        The size of the window that was used to create the PAA representations
+        of the given normalized time series dataset.
     :param sax_alphabet_size: int
         The size of the alphabet that was used to create the SAX
+        representations corresponding to the given normalized time series
+        dataset.
+    :param a_sax_alphabet_size: int
+        The size of the alphabet that was used to create the Adaptive SAX
         representations corresponding to the given normalized time series
         dataset.
     :param one_d_sax_alphabet_size_avg: int
@@ -225,33 +236,41 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_one_d_sax_inv,
 
     # plot raw time series
     plt.figure()
-    position = 221
+    position = 231
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-")
     plt.title("Raw time series")
 
-    # plot PAA
-    position = 222
-    plt.subplot(position)
-    plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
-    plt.plot(df_paa_inv.iloc[:, num_column], "b-")
-    plt.title("PAA")
-
     # plot SAX
-    position = 223
+    position = 232
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
     plt.plot(df_sax_inv.iloc[:, num_column], "b-")
-    plt.title("SAX, %d symbols" % sax_alphabet_size)
+    plt.title(f"SAX, {sax_alphabet_size} symbols")
+
+    # plot Adaptive SAX
+    position = 233
+    plt.subplot(position)
+    plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
+    plt.plot(df_a_sax_inv.iloc[:, num_column], "b-")
+    plt.title(f"Adaptive SAX, {a_sax_alphabet_size} symbols")
+
+    # plot PAA
+    position = 234
+    plt.subplot(position)
+    plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
+    plt.plot(df_paa_inv.iloc[:, num_column], "b-")
+    plt.title(f"PAA, window size {window_size}")
 
     # plot 1d-SAX
-    position = 224
+    position = 235
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
     plt.plot(df_one_d_sax_inv.iloc[:, num_column], "b-")
-    plt.title("1d-SAX, %d symbols "
-              "(%dx%d)" % (one_d_sax_alphabet_size_avg * one_d_sax_alphabet_size_slope,
-                           one_d_sax_alphabet_size_avg, one_d_sax_alphabet_size_slope))
+    plt.title("1d-SAX, "
+              f"{one_d_sax_alphabet_size_avg * one_d_sax_alphabet_size_slope} "
+              "symbols "
+              f"({one_d_sax_alphabet_size_avg}x{one_d_sax_alphabet_size_slope})")
 
     plt.tight_layout()
     plt.show()
