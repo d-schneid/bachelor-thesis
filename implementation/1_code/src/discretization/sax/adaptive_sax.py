@@ -1,10 +1,12 @@
 import pandas as pd
 import numpy as np
 import math
+import warnings
 from sklearn import metrics
 
 from discretization.sax.sax import SAX
 from discretization.sax.graphics import plot_eval_k_means
+from discretization.sax.symbol_mapping import IntervalNormMedian
 
 
 # the k-means algorithm of the aSAX stops when the relative change of the
@@ -380,6 +382,12 @@ class AdaptiveSAX(SAX):
         :return:
             dataframe of shape (ts_size, num_ts)
         """
+
+        if isinstance(symbol_mapping, IntervalNormMedian):
+            warnings.warn("Use the chosen 'symbol_mapping' strategy with "
+                          "caution, because in the aSAX, the breakpoint "
+                          "intervals are not (primarily) determined based on "
+                          "a Gaussian distribution.")
 
         # use breakpoints of classic SAX (equiprobable regions of the standard
         # normal distribution) if no breakpoints are given

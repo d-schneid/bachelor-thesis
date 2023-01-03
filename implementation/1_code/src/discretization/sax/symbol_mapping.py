@@ -32,8 +32,10 @@ class SymbolMapping(ABC):
 
 class IntervalNormMedian(SymbolMapping):
     """
-    For this mapping strategy, the median of the respective breakpoint interval
-    for a standard normal distribution is used as a symbol value for the
+    For this mapping strategy, the Gaussian distribution used to compute the
+    breakpoints for the intervals for the quantization of raw values is used.
+    The median of the respective breakpoint interval is computed under the area
+    of this Gaussian distribution and used as a symbol value for the
     corresponding SAX symbol of the breakpoint interval.
 
     :param alphabet_size: int
@@ -58,7 +60,7 @@ class IntervalNormMedian(SymbolMapping):
         median_quantiles = [bound / (2 * self.alphabet_size)
                             for bound in range(1, 2 * self.alphabet_size, 2)]
         # compute z-value of median quantiles within the respective breakpoint
-        # interval for standard normal distribution in ascending order
+        # interval for Gaussian distribution in ascending order
         self.interval_medians = norm.ppf(median_quantiles, scale=self.var)
 
     def get_mapped(self, df_sax, alphabet, breakpoints=None):
@@ -105,9 +107,10 @@ class ValuePoints(SymbolMapping):
     Caveat: It could be the case that there is a symbol in a SAX representation
     for that there is no symbol value with such mapping strategy, because there
     is no time series point in the respective interval, at all.
-    But, it is very unlikely that this will be the case, because of the
-    equiprobable breakpoint intervals of the standard normal distribution;
-    especially not for realistic real-life and long time series.
+    But, it is very unlikely that this will be the case, because of the way
+    the breakpoint intervals are determined (equiprobable area under Gaussian
+    distribution, k-means); especially not for realistic real-life and long
+    time series.
 
     :param df_norm: dataframe of shape (ts_size, num_ts)
         The normalized time series dataset the SAX representations whose
@@ -125,8 +128,7 @@ class ValuePoints(SymbolMapping):
         # breakpoint intervals for each
         for col_name, col_data in self.df_norm.items():
             # assign respective alphabet index to each point in time series
-            alphabet_idx = np.searchsorted(breakpoints,
-                                           col_data, side="right")
+            alphabet_idx = np.searchsorted(breakpoints, col_data, side="right")
             symbol_values = self.get_symbol_values(col_data.groupby(by=alphabet_idx))
 
             mapping = {}

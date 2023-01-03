@@ -78,7 +78,8 @@ def plot_paa_sax_symbols(df_norm, df_paa, df_sax, breakpoints, alphabet_size,
     :param df_sax: dataframe of shape (num_segments, num_ts)
         The SAX representations of the given PAA representations.
     :param breakpoints: np.array
-        The breakpoints on which the given SAX representations are based.
+        The breakpoints that determine the symbols of the segments of the PAA
+        representation that shall be plotted.
     :param alphabet_size: int
         The size of the alphabet on which the given SAX representations are based.
     :param window_size: int

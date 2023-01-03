@@ -44,3 +44,7 @@ class AbstractSAX(ABC):
     @abstractmethod
     def transform(self, *args, **kwargs):
         pass
+
+    @abstractmethod
+    def inv_transform(self, *args, **kwargs):
+        pass

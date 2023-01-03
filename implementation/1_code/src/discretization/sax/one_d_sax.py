@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 from utils.utils import constant_segmentation, interpolate_segments
-from discretization.sax.symbol_mapping import ValuePoints
+from discretization.sax.symbol_mapping import ValuePoints, IntervalNormMedian
 from discretization.sax.sax import SAX
 from discretization.sax.abstract_sax import (AbstractSAX,
                                              NUM_ALPHABET_LETTERS, breakpoints)
@@ -219,6 +219,12 @@ class OneDSAX(AbstractSAX):
                           "initializing the chosen 'symbol_mapping_slope' "
                           "strategy. Otherwise, the results might not be "
                           "meaningful.")
+        if isinstance(symbol_mapping_slope, IntervalNormMedian):
+            warnings.warn("Make sure you have initialized the chosen "
+                          "'symbol_mapping_slope' strategy with the variance "
+                          "of the Gaussian distribution that was used to "
+                          "determine the breakpoint intervals for the segment "
+                          "slopes.")
 
         ts_size = df_norm.shape[0]
         start, end, num_segments = constant_segmentation(ts_size, window_size)
