@@ -319,7 +319,8 @@ class AdaptiveSAX(SAX):
                 df_paa, df_breakpoints, df_interval_means)
 
             ssq_error_new = (df_paa - df_mapped_interval_means).pow(2).sum(axis=0)
-            if all((abs(ssq_error - ssq_error_new) / ssq_error) < THRESHOLD_K_MEANS):
+            if all(ssq_error_new == 0) or all((abs(ssq_error - ssq_error_new) / ssq_error)
+                                              < THRESHOLD_K_MEANS):
                 if eval_mode:
                     silhouette, calinski_harabasz, davies_bouldin =\
                         _compute_eval_metrics(df_paa, df_clustering)
