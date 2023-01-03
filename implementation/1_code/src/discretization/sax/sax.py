@@ -47,7 +47,8 @@ class SAX(AbstractSAX):
                               index=df_paa.index, columns=df_paa.columns)
         return df_sax
 
-    def inv_transform(self, df_sax, ts_size, window_size, symbol_mapping):
+    def inv_transform(self, df_sax, ts_size, window_size, symbol_mapping,
+                      *args, **kwargs):
         """
         Approximate the original time series dataset by transforming its SAX
         representations into a time series dataset with the same size by
@@ -68,8 +69,8 @@ class SAX(AbstractSAX):
         """
 
         df_mapped = symbol_mapping.get_mapped(df_sax, self.alphabet, self.breakpoints)
-        df_inv = interpolate_segments(df_mapped, ts_size, window_size)
-        return df_inv
+        df_inv_sax = interpolate_segments(df_mapped, ts_size, window_size)
+        return df_inv_sax
 
     def _distance(self, df_alphabet_idx, ts_size, sax_idx):
         """

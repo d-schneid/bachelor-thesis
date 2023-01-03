@@ -343,13 +343,56 @@ class AdaptiveSAX(SAX):
             transformed into their aSAX representations.
         :return:
             dataframe of shape (num_segments, num_ts)
+            dataframe of shape (num_breakpoints, num_ts)
         """
 
         df_breakpoints = self.k_means(df_paa)
         a_sax_reprs = []
         for i in range(df_paa.shape[1]):
             self.breakpoints = np.array(df_breakpoints.iloc[:, i])
-            # transform column by column, because of individual breakpoints
+            # transform time series by time series, because of individual
+            # breakpoints
             df_sax = super().transform(df_paa.iloc[:, i].to_frame())
             a_sax_reprs.append(df_sax)
-        return pd.concat(a_sax_reprs, axis=1)
+        return pd.concat(a_sax_reprs, axis=1), df_breakpoints
+
+    def inv_transform(self, df_a_sax, ts_size, window_size, symbol_mapping,
+                      df_breakpoints=None, *args, **kwargs):
+        """
+        Approximate the original time series dataset by transforming its aSAX
+        representations into a time series dataset with the same size by
+        assigning each point the symbol value of its segment based on the
+        individual breakpoints of each aSAX representation.
+
+        :param df_a_sax: dataframe of shape (num_segments, num_ts)
+            The aSAX representation of the time series dataset.
+        :param ts_size: int
+            The size of the original time series.
+        :param window_size: int
+            The size of the segments with which the given aSAX representations
+            were created.
+        :param symbol_mapping: SymbolMapping
+            The symbol mapping strategy that determines the symbol values for
+            the aSAX symbols.
+        :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts)
+            The individual breakpoints for each aSAX representation that were
+            used to create it.
+        :return:
+            dataframe of shape (ts_size, num_ts)
+        """
+
+        # use breakpoints of classic SAX (equiprobable regions of the standard
+        # normal distribution) if no breakpoints are given
+        self.breakpoints = self.init_breakpoints
+        inv_a_sax_reprs = []
+        for i in range(df_a_sax.shape[1]):
+            if df_breakpoints is not None:
+                self.breakpoints = np.array(df_breakpoints.iloc[:, i])
+            # inverse transform time series by time series with the individual
+            # breakpoints that were used for the transformation into the given
+            # aSAX representation
+            df_inv_a_sax = super().inv_transform(df_a_sax.iloc[:, i].to_frame(),
+                                                 ts_size, window_size,
+                                                 symbol_mapping, *args, **kwargs)
+            inv_a_sax_reprs.append(df_inv_a_sax)
+        return pd.concat(inv_a_sax_reprs, axis=1)
