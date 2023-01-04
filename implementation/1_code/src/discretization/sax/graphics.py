@@ -187,9 +187,11 @@ def plot_sax_symbols(df_norm, df_sax, alphabet_avg, window_size, num_column,
 
 
 def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
-                      df_one_d_sax_inv, window_size, sax_alphabet_size,
-                      a_sax_alphabet_size, one_d_sax_alphabet_size_avg,
-                      one_d_sax_alphabet_size_slope, num_column):
+                      df_one_d_sax_inv, df_e_sax_inv, window_size,
+                      sax_alphabet_size, a_sax_alphabet_size,
+                      one_d_sax_alphabet_size_avg,
+                      one_d_sax_alphabet_size_slope, e_sax_alphabet_size,
+                      num_column):
     """
     Plot an original normalized time series, its PAA representation, its SAX
     representation, and its 1d-SAX representation.
@@ -209,6 +211,9 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
     :param df_one_d_sax_inv: dataframe of shape (ts_size, num_ts)
         The inverse 1d-SAX representations of the given normalized time series
         dataset.
+    :param df_e_sax_inv: dataframe of shape (ts_size, num_ts)
+        The inverse Extended SAX representations of the given normalized time
+        series dataset.
     :param window_size: int
         The size of the window that was used to create the PAA representations
         of the given normalized time series dataset.
@@ -228,6 +233,10 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
         The size of the alphabet for the segment slopes that was used to create
         the 1d-SAX representations corresponding to the given normalized time
         series dataset.
+    :param e_sax_alphabet_size: int
+        The size of the alphabet that was used to create the Extended SAX
+        representations corresponding to the given normalized time series
+        dataset.
     :param num_column: int
         The number of the column (i.e. the time series and its representations)
         that shall be plotted.
@@ -247,31 +256,38 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
     plt.plot(df_sax_inv.iloc[:, num_column], "b-")
-    plt.title(f"SAX, {sax_alphabet_size} symbols")
+    plt.title(f"SAX\n{sax_alphabet_size} symbols")
 
     # plot Adaptive SAX
     position = 233
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
     plt.plot(df_a_sax_inv.iloc[:, num_column], "b-")
-    plt.title(f"Adaptive SAX, {a_sax_alphabet_size} symbols")
+    plt.title(f"Adaptive SAX\n{a_sax_alphabet_size} symbols")
 
     # plot PAA
     position = 234
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
     plt.plot(df_paa_inv.iloc[:, num_column], "b-")
-    plt.title(f"PAA, window size {window_size}")
+    plt.title(f"PAA\nwindow size {window_size}")
 
     # plot 1d-SAX
     position = 235
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
     plt.plot(df_one_d_sax_inv.iloc[:, num_column], "b-")
-    plt.title("1d-SAX, "
+    plt.title("1d-SAX\n"
               f"{one_d_sax_alphabet_size_avg * one_d_sax_alphabet_size_slope} "
-              "symbols "
+              "symbols"
               f"({one_d_sax_alphabet_size_avg}x{one_d_sax_alphabet_size_slope})")
+
+    # plot Extended SAX
+    position = 236
+    plt.subplot(position)
+    plt.plot(df_norm.iloc[:, num_column], "b-", alpha=0.4)
+    plt.plot(df_e_sax_inv.iloc[:, num_column], "b-")
+    plt.title(f"Extended SAX\n{e_sax_alphabet_size} symbols")
 
     plt.tight_layout()
     plt.show()
