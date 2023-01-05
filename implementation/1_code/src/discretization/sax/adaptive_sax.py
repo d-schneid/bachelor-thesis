@@ -14,6 +14,27 @@ from discretization.sax.symbol_mapping import IntervalNormMedian
 THRESHOLD_K_MEANS = 1e-09
 
 
+def _terminate_k_means(ssq_error, ssq_error_new):
+    """
+    Determine if the k-means algorithm shall stop based on the SSQ Error.
+
+    :param ssq_error: pd.Series of shape (num_ts,)
+        The SSQ Error of the clustering from the previous iteration.
+    :param ssq_error_new: pd.Series of shape (num_ts,)
+        The SSQ Error of the new clustering from the current iteration.
+    :return: bool
+        True, if the new SSQ Error is zero for all time series; or the SSQ
+        Error does not change anymore compared to the previous SSQ Error for
+        all time series; or the relative SSQ Error based on the previous SSQ
+        Error is below a threshold for all time series.
+        False, otherwise.
+    """
+
+    return any([all(ssq_error_new == 0),
+                all(ssq_error == ssq_error_new),
+                all((abs(ssq_error - ssq_error_new) / ssq_error) < THRESHOLD_K_MEANS)])
+
+
 def _find_min_above_threshold(paa_values, threshold):
     """
     Find minimum of values above a given threshold.
@@ -319,8 +340,7 @@ class AdaptiveSAX(SAX):
                 df_paa, df_breakpoints, df_interval_means)
 
             ssq_error_new = (df_paa - df_mapped_interval_means).pow(2).sum(axis=0)
-            if all(ssq_error_new == 0) or all((abs(ssq_error - ssq_error_new) / ssq_error)
-                                              < THRESHOLD_K_MEANS):
+            if _terminate_k_means(ssq_error, ssq_error_new):
                 if eval_mode:
                     silhouette, calinski_harabasz, davies_bouldin =\
                         _compute_eval_metrics(df_paa, df_clustering)
