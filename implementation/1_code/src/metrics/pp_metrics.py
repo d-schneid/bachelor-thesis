@@ -31,11 +31,11 @@ def get_pp_metric_instance(metric):
     module = __import__(MODULE_NAME, fromlist=[metric])
     module_members = inspect.getmembers(module)
     # Find the member that has the same name as the given class (ignoring case)
-    PPMetric = next(member for name, member in module_members
-                    if name.lower() == metric.lower())
+    Metric = next(member for name, member in module_members
+                  if name.lower() == metric.lower())
 
     # instantiate found subclass of abstract class 'PPMetric'
-    return PPMetric()
+    return Metric()
 
 
 class PPMetric(ABC):

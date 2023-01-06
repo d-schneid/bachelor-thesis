@@ -5,7 +5,6 @@ import warnings
 from sklearn import metrics
 
 from discretization.sax.sax import SAX
-from discretization.sax.graphics import plot_eval_k_means
 from discretization.sax.symbol_mapping import IntervalNormMedian
 
 
