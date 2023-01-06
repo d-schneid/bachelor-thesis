@@ -61,9 +61,9 @@ def constant_segmentation(ts_size, window_size):
     return start, end, num_segments
 
 
-def load_parquet_to_df(path):
+def load_parquet_to_df_list(path):
     """
-    Load Parquet file for univariate and multivariate time series dataset.
+    Load the data of Parquet files into individual dataframes.
     If the given path belongs to a file, the data of this file are loaded.
     If the given path belongs to a directory, the data of all files located in
     this directory are loaded.
@@ -72,33 +72,38 @@ def load_parquet_to_df(path):
         Path to the Parquet file or directory to be read. Relative to the
         directory "0_data".
     :return:
-        dataframe of shape (ts_size, num_ts)
+        list of len(list) = num_loaded_files containing dataframes of shape
+        (ts_size, 1 + num_metadata_cols)
     :raises:
-        ValueError: If the time series dataset contains NaN. Either some time
-                    series of the dataset contain NaN or some time series of
-                    the dataset do not have the same size.
+        ValueError: If a dataframe containing a time series, potentially with
+                    its metadata, contains NaN. Either the respective time
+                    series or its metadata contain NaN or the respective time
+                    series together with its metadata do not have the same
+                    length.
         Exception: On any failure, e.g. if the given path does not exist or
                    the files are corrupted.
     """
 
-    error_msg = "Time series dataset contains NaN. Either some time series " \
-                "of the dataset contain NaN or some time series of the " \
-                "dataset do not have the same size."
+    error_msg = "Dataframe containing a time series, potentially with its " \
+                "metadata, contains NaN. Either the respective time series " \
+                "or its metadata contain NaN or the respective time series " \
+                "together with its metadata do not have the same length."
 
     path = Path(os.path.join(DATA_DIR, path))
 
     if os.path.isdir(path):
-        df = pd.concat((pd.read_parquet(parquet_file, engine="fastparquet")
-                        for parquet_file in path.glob("*.parquet")), axis=1)
-        if df.isnull().values.any():
-            raise ValueError(error_msg)
-        return df
+        df_list = []
+        for parquet_file in path.glob("*parquet"):
+            df = pd.read_parquet(parquet_file, engine="fastparquet")
+            if df.isnull().values.any():
+                raise ValueError(error_msg)
+            df_list.append(df)
+        return df_list
 
     df = pd.read_parquet(path, engine="fastparquet")
     if df.isnull().values.any():
         raise ValueError(error_msg)
-
-    return df
+    return [df]
 
 
 def z_normalize(df_ts):
