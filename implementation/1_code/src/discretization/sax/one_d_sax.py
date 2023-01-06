@@ -65,29 +65,6 @@ def compute_slopes(df_norm, df_paa, window_size):
     return slopes
 
 
-def get_split_avg_slope(df_one_d_sax):
-    """
-    Split 1d-SAX representations into its average and slope symbols.
-
-    :param df_one_d_sax: dataframe of shape (num_segments, num_ts)
-        The 1d-SAX representations that shall be split.
-    :return: two dataframes, each of shape (num_segments, num_ts)
-        The first dataframe contains the average symbols, the second dataframe
-        contains the slope symbols.
-    """
-
-    # match any single character at start of string
-    pat_fst_char = re.compile(r'^.')
-    # match any single character at start of string and capture next character
-    pat_snd_char = re.compile(r'^.(.)')
-
-    df_avg = df_one_d_sax.applymap(lambda avg_slope:
-                                   pat_fst_char.match(avg_slope).group(0))
-    df_slope = df_one_d_sax.applymap(lambda avg_slope:
-                                     pat_snd_char.match(avg_slope).group(1))
-    return df_avg, df_slope
-
-
 class OneDSAX(AbstractSAX):
     """
     One-D Symbolic Aggregate Approximation (1d-SAX).
@@ -232,7 +209,8 @@ class OneDSAX(AbstractSAX):
         time_segment_middle = interpolate_segments(time_segment_middle, ts_size,
                                                    window_size).squeeze()
 
-        df_avg, df_slope = get_split_avg_slope(df_one_d_sax)
+        df_avg = df_one_d_sax.applymap(lambda symbols: symbols[0])
+        df_slope = df_one_d_sax.applymap(lambda symbols: symbols[1])
 
         df_mapped_avg = symbol_mapping_avg.get_mapped(df_avg, self.alphabet_avg,
                                                       self.breakpoints_avg)
