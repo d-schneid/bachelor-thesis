@@ -14,7 +14,7 @@ from sktime.performance_metrics.forecasting import (
 MODULE_NAME = "metrics.pp_metrics"
 
 
-def get_pp_metric(metric):
+def get_pp_metric_instance(metric):
     """
     A factory method to create instances of subclasses of the abstract class
     'PPMetric'.
@@ -40,11 +40,17 @@ def get_pp_metric(metric):
 
 class PPMetric(ABC):
     """
-    The abstract class that all metrics inherit.
+    The abstract class from that all metrics inherit.
     This abstract class is supposed to implement the 'template method' design
-    pattern. In that way, existing metrics can be changed and new metrics can
-    be added easily.
+    pattern. In that way, existing metrics can be changed easily and new
+    metrics can be added easily.
+
+    :param abbreviation: str
+        The short name (abbreviation) of this metric.
     """
+
+    def __init__(self, abbreviation):
+        self.abbreviation = abbreviation
 
     @abstractmethod
     def _compute(self, ts_norm, ts_inv):
@@ -91,7 +97,7 @@ class MeanAbsoluteError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MAE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_absolute_error(ts_norm, ts_inv)
@@ -104,7 +110,7 @@ class MeanSquaredError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MSE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_squared_error(ts_norm, ts_inv)
@@ -118,7 +124,7 @@ class RootMeanSquaredError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("RMSE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_squared_error(ts_norm, ts_inv, square_root=True)
@@ -131,7 +137,7 @@ class MedianAbsoluteError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MedAE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_absolute_error(ts_norm, ts_inv)
@@ -144,7 +150,7 @@ class MedianSquaredError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MedSE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_squared_error(ts_norm, ts_inv)
@@ -158,7 +164,7 @@ class RootMedianSquaredError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("RMedSE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_squared_error(ts_norm, ts_inv, square_root=True)
@@ -171,7 +177,7 @@ class GeometricMeanAbsoluteError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("GMAE")
 
     def _compute(self, ts_norm, ts_inv):
         return geometric_mean_absolute_error(ts_norm, ts_inv)
@@ -184,7 +190,7 @@ class GeometricMeanSquaredError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("GMSE")
 
     def _compute(self, ts_norm, ts_inv):
         return geometric_mean_squared_error(ts_norm, ts_inv)
@@ -198,7 +204,7 @@ class RootGeometricMeanSquaredError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("RGMSE")
 
     def _compute(self, ts_norm, ts_inv):
         return geometric_mean_squared_error(ts_norm, ts_inv, square_root=True)
@@ -212,7 +218,7 @@ class MeanAbsolutePercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MAPE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_absolute_percentage_error(ts_norm, ts_inv)
@@ -227,7 +233,7 @@ class SymmetricMeanAbsolutePercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("SMAPE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_absolute_percentage_error(ts_norm, ts_inv, symmetric=True)
@@ -241,7 +247,7 @@ class MedianAbsolutePercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MedAPE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_absolute_percentage_error(ts_norm, ts_inv)
@@ -255,7 +261,7 @@ class SymmetricMedianAbsolutePercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("SMedAPE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_absolute_percentage_error(ts_norm, ts_inv, symmetric=True)
@@ -269,7 +275,7 @@ class MeanSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_squared_percentage_error(ts_norm, ts_inv)
@@ -284,7 +290,7 @@ class RootMeanSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("RMSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_squared_percentage_error(ts_norm, ts_inv, square_root=True)
@@ -298,7 +304,7 @@ class SymmetricMeanSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("SMSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_squared_percentage_error(ts_norm, ts_inv, symmetric=True)
@@ -313,7 +319,7 @@ class RootSymmetricMeanSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("RSMSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return mean_squared_percentage_error(ts_norm, ts_inv, square_root=True, symmetric=True)
@@ -327,7 +333,7 @@ class MedianSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("MedSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_squared_percentage_error(ts_norm, ts_inv)
@@ -342,7 +348,7 @@ class RootMedianSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("RMedSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_squared_percentage_error(ts_norm, ts_inv, square_root=True)
@@ -356,7 +362,7 @@ class SymmetricMedianSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("SMedSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_squared_percentage_error(ts_norm, ts_inv, symmetric=True)
@@ -371,7 +377,7 @@ class RootSymmetricMedianSquaredPercentageError(PPMetric):
     """
 
     def __init__(self):
-        super().__init__()
+        super().__init__("RSMedSPE")
 
     def _compute(self, ts_norm, ts_inv):
         return median_squared_percentage_error(ts_norm, ts_inv, square_root=True, symmetric=True)

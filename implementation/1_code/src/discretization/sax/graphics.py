@@ -97,7 +97,7 @@ def plot_paa_sax_symbols(df_norm, df_paa, df_sax, breakpoints, alphabet_size,
 
     df_paa_interpolated = interpolate_segments(df_paa, ts_size, window_size)
 
-    fig, ax = plt.subplots(figsize=(13, 5))
+    fig, ax = plt.subplots(figsize=(15, 5))
 
     # plot breakpoints as horizontal lines
     for line in breakpoints:
@@ -245,7 +245,7 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
     """
 
     # plot raw time series
-    plt.figure()
+    plt.figure(figsize=(15, 5))
     position = 231
     plt.subplot(position)
     plt.plot(df_norm.iloc[:, num_column], "b-")
@@ -279,7 +279,7 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
     plt.plot(df_one_d_sax_inv.iloc[:, num_column], "b-")
     plt.title("1d-SAX\n"
               f"{one_d_sax_alphabet_size_avg * one_d_sax_alphabet_size_slope} "
-              "symbols"
+              "symbols "
               f"({one_d_sax_alphabet_size_avg}x{one_d_sax_alphabet_size_slope})")
 
     # plot Extended SAX
