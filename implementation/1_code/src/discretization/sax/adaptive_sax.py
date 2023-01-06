@@ -332,6 +332,9 @@ class AdaptiveSAX(SAX):
         :param df_paa: dataframe of shape (num_segments, num_ts)
             The PAA representations that shall be discretized based on the
             computed breakpoints, respectively intervals.
+            Note: While it is not the standard procedure of the aSAX, the
+            original normalized time series data points can be used in the same
+            way as the PAA points to compute the respective breakpoints.
         :param eval_mode: bool (default = False)
             The indication if the k-means algorithm shall be run in evaluation
             mode or not.
@@ -369,12 +372,13 @@ class AdaptiveSAX(SAX):
 
         return df_breakpoints
 
-    def transform(self, df_paa):
+    def transform(self, df_paa, df_breakpoints=None):
         """
         Transform the PAA representation of each time series into its aSAX
         representation (i.e. assign each PAA representation its respective
         aSAX word) based on individual breakpoints computed by the k-means
-        algorithm for each PAA representation (data-adaptive breakpoints).
+        algorithm for each PAA representation (data-adaptive breakpoints) or
+        the given breakpoints.
         It does not modify the given PAA representations before computation,
         such as normalization. Therefore, the modification of the PAA
         representations (e.g. normalization) is the responsibility of the user.
@@ -382,12 +386,21 @@ class AdaptiveSAX(SAX):
         :param df_paa: dataframe of shape (num_segments, num_ts)
             The PAA representations of a time series dataset that shall be
             transformed into their aSAX representations.
+        :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts) (default = None)
+            The individual breakpoints for each given PAA representation that
+            shall be used to transform the respective PAA representation into
+            its aSAX representation.
+            If None, the respective breakpoints resulting from the k-means
+            clustering of the respective PAA points are used.
+            This parameter is intended to allow breakpoints based on the
+            k-means clustering of the original normalized time series data
+            points.
         :return:
             dataframe of shape (num_segments, num_ts)
             dataframe of shape (num_breakpoints, num_ts)
         """
 
-        df_breakpoints = self.k_means(df_paa)
+        df_breakpoints = self.k_means(df_paa) if df_breakpoints is None else df_breakpoints
         a_sax_reprs = []
         for i in range(df_paa.shape[1]):
             self.breakpoints = np.array(df_breakpoints.iloc[:, i])

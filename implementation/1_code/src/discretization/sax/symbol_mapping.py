@@ -75,19 +75,35 @@ class IntervalMean(SymbolMapping):
     is used as a symbol value for the corresponding SAX symbol of the
     breakpoint interval.
 
-    :param bound: int
-        The lower and upper bound that shall be used for the lowest and
-        uppermost breakpoint interval. This bound is symmetric.
-        A value for these bounds is needed to avoid infinity as bounds.
+    :param lower_bound: float
+        The lower bound that shall be used for the lowest breakpoint interval.
+        A value for this bound is needed to avoid infinity as a bounds.
+    :param upper_bound: float (default = None)
+        The upper bound that shall be used for the uppermost breakpoint
+        interval. A value for this bound is needed to avoid infinity as a
+        bound.
+        If None, the negative of the 'lower_bound' is used. Thus, the bounds
+        will be symmetrical about zero.
+        Usually, the two bounds should only be non-symmetrical about zero for
+        the aSAX, because of its adaptive and possibly non-symmetrical
+        breakpoints about zero.
     """
 
-    def __init__(self, bound):
+    def __init__(self, lower_bound, upper_bound=None):
         super().__init__()
-        self.bound = -bound if bound < 0 else bound
+        self.lower_bound = lower_bound
+        self.upper_bound = -lower_bound if upper_bound is None else upper_bound
 
     def get_mapped(self, df_sax, alphabet, breakpoints):
-        lower_bounds = np.insert(breakpoints, 0, -self.bound)
-        upper_bounds = np.append(breakpoints, self.bound)
+        if self.lower_bound > breakpoints[0]:
+            raise ValueError("The lower bound cannot be above the lowest "
+                             "breakpoint.")
+        if self.upper_bound < breakpoints[-1]:
+            raise ValueError("The upper bound cannot be below the uppermost "
+                             "breakpoint.")
+
+        lower_bounds = np.insert(breakpoints, 0, self.lower_bound)
+        upper_bounds = np.append(breakpoints, self.upper_bound)
         interval_means = [(lower_bound + upper_bound) / 2
                           for lower_bound, upper_bound
                           in zip(lower_bounds, upper_bounds)]
