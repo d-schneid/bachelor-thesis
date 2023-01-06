@@ -294,28 +294,27 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
 
 
 def plot_eval_k_means(ssq_error, silhouette, calinski_harabasz, davies_bouldin,
-                      min_alphabet_size, max_alphabet_size):
+                      min_alphabet_size):
     """
     Plot the given internal evaluation metrics of the k-means clustering used
     in the aSAX discretization method.
 
-    :param ssq_error: list of len(ssq_error) = 'max_alphabet_size' - ('min_alphabet_size' - 1)
-        Contains the values of the respective SSQ error for each alphabet size.
-    :param silhouette: list of len(ssq_error) = 'max_alphabet_size' - ('min_alphabet_size' - 1)
-        Contains the values of the respective Silhouette coefficient for each alphabet size.
-    :param calinski_harabasz: list of len(ssq_error) = 'max_alphabet_size' - ('min_alphabet_size' - 1)
-        Contains the values of the respective Calinski-Harabasz index for each alphabet size.
-    :param davies_bouldin: list of len(ssq_error) = 'max_alphabet_size' - ('min_alphabet_size' - 1)
-        Contains the values of the respective Davies-Bouldin index for each alphabet size.
+    :param ssq_error: np.array of shape (num_diff_alphabet_sizes,)
+        Contains the values of the SSQ error for each alphabet size.
+    :param silhouette: np.array of shape (num_diff_alphabet_sizes,)
+        Contains the values of the Silhouette coefficient for each alphabet size.
+    :param calinski_harabasz: np.array of shape (num_diff_alphabet_sizes,)
+        Contains the values of the Calinski-Harabasz index for each alphabet size.
+    :param davies_bouldin: np.array of shape (num_diff_alphabet_sizes,)
+        Contains the values of the Davies-Bouldin index for each alphabet size.
     :param min_alphabet_size: float
         The lower bound (inclusive) of the aSAX alphabet size for that the
-        evaluation was run.
-    :param max_alphabet_size: float
-        The upper bound (inclusive) of the aSAX alphabet size for that the
         evaluation was run.
     :return:
         None
     """
+
+    max_alphabet_size = min_alphabet_size + ssq_error.size - 1
 
     x_ticks = range(min_alphabet_size, max_alphabet_size + 1)
     x_label = "alphabet size"

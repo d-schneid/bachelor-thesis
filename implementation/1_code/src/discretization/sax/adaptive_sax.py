@@ -191,40 +191,46 @@ def _compute_interval_means(df_paa, df_breakpoints):
 
 def _compute_eval_metrics(df_paa, df_clustering):
     """
-    Compute the average Silhouette coefficient, Calinski-Harabasz index, and
-    Davis-Bouldin index across all given PAA representations and their
-    respective clustering. These metrics evaluate the internal goodness of the
+    Compute the Silhouette coefficient, Calinski-Harabasz index, and
+    Davis-Bouldin index for each given PAA representation and its respective
+    clustering. These metrics evaluate the internal goodness of the respective
     given clustering.
 
     :param df_paa: dataframe of shape (num_segments, num_ts)
-        The PAA representations whose clustering shall be evaluated.
+        The PAA representations whose clusterings shall be evaluated.
     :param df_clustering: dataframe of shape (num_segments, num_ts)
-        The individual clustering of each given PAA representation based on the
-        respective interval index (cluster id) of each PAA point.
-    :return:
-        float, float, float
+        The individual clusterings of each given PAA representation based on
+        the respective interval index (cluster id) of each PAA point.
+    :return: np.array of shape (num_ts, 3, 1)
+        The values of the three internal evaluation metrics named above for
+        each given PAA representation for the given respective clustering.
     """
 
     num_ts = df_paa.shape[1]
-    silhouette, calinski_harabasz, davies_bouldin = 0, 0, 0
+    eval_results = []
     for i in range(num_ts):
+        silhouette, calinski_harabasz, davies_bouldin = [], [], []
         paa_values = df_paa.iloc[:, i].to_frame()
         clustering = df_clustering.iloc[:, i]
-        silhouette += metrics.silhouette_score(paa_values, clustering)
-        calinski_harabasz += metrics.calinski_harabasz_score(paa_values, clustering)
-        davies_bouldin += metrics.davies_bouldin_score(paa_values, clustering)
 
-    return silhouette/num_ts, calinski_harabasz/num_ts, davies_bouldin/num_ts
+        silhouette.append(metrics.silhouette_score(paa_values, clustering))
+        calinski_harabasz.append(metrics.calinski_harabasz_score(paa_values, clustering))
+        davies_bouldin.append(metrics.davies_bouldin_score(paa_values, clustering))
+
+        eval_results.append([silhouette, calinski_harabasz, davies_bouldin])
+
+    return np.array(eval_results)
 
 
 def eval_k_means(df_paa, min_alphabet_size, max_alphabet_size):
     """
-    Evaluate the k-means algorithm of the aSAX for different sizes of its
-    alphabet. The evaluation is run for alphabet sizes from 'min_alphabet_size'
-    (inclusive) to 'max_alphabet_size' (inclusive).
-    The evaluation results will be plotted for visual inspection. This supports
-    the parameter-free usage of the aSAX discretization method by selecting an
-    appropriate alphabet size according to the plotted evaluation results.
+    Evaluate the k-means algorithm of the aSAX for each given PAA
+    representation for every alphabet size of the given range. The evaluation
+    is run for alphabet sizes from 'min_alphabet_size' (inclusive) to
+    'max_alphabet_size' (inclusive).
+    This evaluation supports the parameter-free usage of the aSAX
+    discretization method by selecting an appropriate alphabet size according
+    to the computed evaluation results.
 
     :param df_paa: dataframe of shape (num_segments, num_ts)
         The PAA representations that shall be (individually) clustered with the
@@ -235,8 +241,12 @@ def eval_k_means(df_paa, min_alphabet_size, max_alphabet_size):
     :param max_alphabet_size: int
         The upper bound (inclusive) of the aSAX alphabet size for that the
         evaluation shall be run.
-    :return:
-        None
+    :return: np.array of shape (num_ts, 4, num_diff_alphabet_sizes)
+        There are four internal evaluation metrics that are computed:
+        SSQ Error, Silhouette coefficient, Calinski-Harabasz index, and
+        Davies-Bouldin index. The returned array contains an array of shape
+        (num_diff_alphabet_sizes,) for each of these evaluation metrics within
+        each of the given PAA representations and in the listed order above.
     :raises:
         ValueError: If 'min_alphabet_size' > 'max_alphabet_size'.
         ValueError: If 'min_alphabet_size' < 1.
@@ -248,16 +258,20 @@ def eval_k_means(df_paa, min_alphabet_size, max_alphabet_size):
         raise ValueError("The maximum alphabet size for evaluation needs to "
                          "be at least as large as the minimum alphabet size")
 
-    ssq_error, silhouette, calinski_harabasz, davies_bouldin = [], [], [], []
+    num_ts = df_paa.shape[1]
+    # 3d-np.array: within each time series 4 internal evaluation metrics that
+    # each get computed for every alphabet size of the given range
+    eval_results = np.empty([num_ts, 4, 1])
     for k in range(min_alphabet_size, max_alphabet_size + 1):
         a_sax = AdaptiveSAX(alphabet_size=k)
-        ssq_err, silh, c_h, d_b = a_sax.k_means(df_paa, eval_mode=True)
-        ssq_error.append(ssq_err)
-        silhouette.append(silh)
-        calinski_harabasz.append(c_h)
-        davies_bouldin.append(d_b)
-    plot_eval_k_means(ssq_error, silhouette, calinski_harabasz,
-                      davies_bouldin, min_alphabet_size, max_alphabet_size)
+        eval_results_new = a_sax.k_means(df_paa, eval_mode=True)
+        # attach evaluation results for current alphabet size to all evaluation
+        # results of previous alphabet sizes
+        eval_results = np.concatenate([eval_results, eval_results_new], axis=2)
+
+    # delete arbitrary values that were created during initialization by
+    # np.empty
+    return np.delete(eval_results, 0, axis=2)
 
 
 class AdaptiveSAX(SAX):
@@ -312,8 +326,8 @@ class AdaptiveSAX(SAX):
         the k-means terminology.
         Can be run in evaluation mode ('eval_mode') where internal evaluation
         metrics (SSQ Error, Silhouette coefficient, Calinski-Harabasz index,
-        Davies-Bouldin index) of the final clustering are computed averaged
-        across the given PAA representations.
+        Davies-Bouldin index) of the final clustering (converged) are computed
+        for each given PAA representation.
 
         :param df_paa: dataframe of shape (num_segments, num_ts)
             The PAA representations that shall be discretized based on the
@@ -323,10 +337,13 @@ class AdaptiveSAX(SAX):
             mode or not.
         :return:
             'eval_mode' = False: dataframe of shape (num_breakpoints, num_ts)
-            'eval_mode' = True: float, float, float, float
+            'eval_mode' = True: np.array of shape (num_ts, 4, 1)
+                The values of the four internal evaluation metrics for each
+                given PAA representation for the final clustering (converged).
         """
 
-        ssq_error, df_breakpoints = self._init_k_means(df_paa.shape[1])
+        num_ts = df_paa.shape[1]
+        ssq_error, df_breakpoints = self._init_k_means(num_ts)
         ssq_error.index = [column for column in df_paa.columns]
         while True:
             df_interval_means = _compute_interval_means(df_paa, df_breakpoints)
@@ -342,10 +359,11 @@ class AdaptiveSAX(SAX):
             ssq_error_new = (df_paa - df_mapped_interval_means).pow(2).sum(axis=0)
             if _terminate_k_means(ssq_error, ssq_error_new):
                 if eval_mode:
-                    silhouette, calinski_harabasz, davies_bouldin =\
-                        _compute_eval_metrics(df_paa, df_clustering)
-                    return ssq_error_new.mean(), silhouette,\
-                        calinski_harabasz, davies_bouldin
+                    # reshape to 3d-np.array for concatenation
+                    ssq_error_new = ssq_error_new.to_numpy().reshape(1, 1, num_ts)
+                    # 3d-np.array
+                    eval_results = _compute_eval_metrics(df_paa, df_clustering).T
+                    return np.concatenate([ssq_error_new, eval_results], axis=1).T
                 break
             ssq_error = ssq_error_new
 
