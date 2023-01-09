@@ -61,6 +61,12 @@ def constant_segmentation(ts_size, window_size):
     return start, end, num_segments
 
 
+def constant_segmentation_overlapping(ts_size, len_subsequence, gap=1):
+    start = np.arange(0, ts_size - len_subsequence + 1, gap)
+    end = np.arange(len_subsequence, ts_size + 1, gap)
+    return start, end
+
+
 def load_parquet_to_df_list(path):
     """
     Load the data of Parquet files into individual dataframes.
