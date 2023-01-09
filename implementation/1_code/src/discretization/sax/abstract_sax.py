@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from abc import ABC, abstractmethod
 from scipy.stats import norm
 
@@ -24,6 +25,26 @@ def breakpoints(alphabet_size, scale=1):
     # z-values of quantiles of Gaussian distribution with variance 'scale'
     breakpts = norm.ppf(quantiles, scale=scale)
     return breakpts
+
+
+def linearize_sax_word(df_sax, symbols_per_segment):
+    """
+    Linearize SAX representations that consist of multiple symbols per segment.
+
+    :param df_sax: dataframe of shape (num_segments, num_ts)
+        The SAX representations that shall be linearized.
+    :param symbols_per_segment: int
+        The symbols per segment that are used in the given SAX representations.
+    :return:
+        dataframe of shape (num_segments * symbols_per_segment, num_ts)
+    """
+
+    symbols_splits = []
+    for i in range(symbols_per_segment):
+        symbols_splits.append(df_sax.applymap(lambda symbols: symbols[i]))
+
+    # use mergesort (stable) to preserve order of symbols between dataframes
+    return pd.concat(symbols_splits).sort_index(kind="mergesort")
 
 
 class AbstractSAX(ABC):

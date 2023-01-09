@@ -177,7 +177,7 @@ def _compute_interval_means(df_paa, df_breakpoints):
 
     interval_means = []
     idx = 0
-    for col_num, col_data in df_paa.items():
+    for col_name, col_data in df_paa.items():
         # assign each PAA point its respective interval index
         breakpoint_idx = np.searchsorted(df_breakpoints.iloc[:, idx], col_data,
                                          side="right")
