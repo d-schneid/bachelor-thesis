@@ -69,6 +69,7 @@ class AbstractSAX(ABC):
                    in range(ord('a'), ord('a') + self.alphabet_size)]
         self.alphabet = np.array(letters)
         self.breakpoints = breakpoints(self.alphabet_size)
+        self.symbols_per_segment = 1
 
     @abstractmethod
     def transform(self, *args, **kwargs):

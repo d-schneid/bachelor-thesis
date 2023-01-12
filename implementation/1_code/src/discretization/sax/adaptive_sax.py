@@ -371,7 +371,7 @@ class AdaptiveSAX(SAX):
 
         return df_breakpoints
 
-    def transform(self, df_paa, df_breakpoints=None):
+    def transform(self, df_paa, df_breakpoints=None, *args, **kwargs):
         """
         Transform the PAA representation of each time series into its aSAX
         representation (i.e. assign each PAA representation its respective

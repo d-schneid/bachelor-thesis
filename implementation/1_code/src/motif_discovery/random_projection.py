@@ -4,10 +4,26 @@ import numpy as np
 
 from approximation.paa import PAA
 from discretization.sax.sax import SAX
-from utils.utils import constant_segmentation_overlapping
+from discretization.sax.one_d_sax import OneDSAX
+from discretization.sax.abstract_sax import AbstractSAX
+from utils.utils import constant_segmentation_overlapping, constant_segmentation
+from discretization.sax.abstract_sax import linearize_sax_word
 
 
-def _get_sax_subsequences(df_norm, len_subsequence, window_size, alphabet_size, gap=1):
+"""
+The functions below constitute the 'Random Projection' algorithm for motif
+discovery in time series based on the extraction of subsequences and their
+transformation to symbolic representations with SAX variants.
+
+References
+----------
+[1] Chiu, Bill, Eamonn Keogh, and Stefano Lonardi. "Probabilistic discovery of
+time series motifs." Proceedings of the ninth ACM SIGKDD international
+conference on Knowledge discovery and data mining. 2003. (expanded version)
+"""
+
+
+def _get_sax_subsequences(df_norm, len_subsequence, window_size, sax_variant, gap=1):
     """
     Extract subsequences of each of the given time series and transform each of
     them into its symbolic representation.
@@ -20,16 +36,17 @@ def _get_sax_subsequences(df_norm, len_subsequence, window_size, alphabet_size, 
     :param window_size: int
         The size of the window that is used to transform each subsequence into
         its PAA representation.
-    :param alphabet_size: int
-        The size of the alphabet that is used to transform the PAA
-        representation of a subsequence into its symbolic representation.
+    :param sax_variant: AbstractSAX
+        The SAX variant that shall be used to transform the PAA representation
+        of a subsequence into its symbolic representation.
     :param gap: int (default = 1)
         The gap between two consecutive subsequences within the corresponding
         time series when extracting them.
     :return:
         df_sax_lst: list of len(df_sax_lst) = num_ts
-            Contains a dataframe of shape (num_subsequences, num_segments) for
-            each time series with its corresponding subsequences.
+            Contains a dataframe of shape
+            (num_subsequences, num_segments * symbols_per_segment) for each
+            time series with its corresponding subsequences.
             The subsequences are contained row-wise in their respective
             symbolic representation in each dataframe. The index of a
             subsequence within its dataframe corresponds to the extraction
@@ -56,36 +73,50 @@ def _get_sax_subsequences(df_norm, len_subsequence, window_size, alphabet_size, 
                                      for j in range(num_subsequences)], axis=1)
         df_subsequences_lst.append(df_subsequences)
 
-    # treat subsequences as whole time series
+    # treat subsequences as usual time series
     paa = PAA(window_size=window_size)
-    df_paa_lst = [paa.transform(df_subsequences_lst[i]) for i in range(num_ts)]
+    df_paa_lst = [paa.transform(df_subsequences) for df_subsequences in df_subsequences_lst]
 
-    # treat subsequences as whole time series
-    sax = SAX(alphabet_size=alphabet_size)
-    df_sax_lst = [sax.transform(df_paa_lst[i]) for i in range(num_ts)]
+    # treat subsequences as usual time series
+    df_sax_lst = []
+    for i in range(num_ts):
+        # last two arguments are only needed for 1d-SAX and eSAX
+        df_sax = sax_variant.transform(df_paa=df_paa_lst[i], df_norm=df_subsequences_lst[i], window_size=window_size)
+        # eSAX and aSAX additionally return data for inverse transformation
+        # extract only symbolic transformation
+        if type(df_sax) is tuple:
+            df_sax = df_sax[0]
+        df_sax_lst.append(df_sax)
+
+    df_sax_lst = [linearize_sax_word(df_sax, sax_variant.symbols_per_segment)
+                  for df_sax in df_sax_lst]
     # put subsequences of a time series row-wise in dataframe
     # then, index of subsequence corresponds to extraction order of
     # subsequences from original time series and serves as a pointer into
     # 'start' and 'end' for the starting and ending index of the respective
     # subsequence within the original time series
-    df_sax_lst = [df_sax_lst[i].T.reset_index(drop=True) for i in range(num_ts)]
+    df_sax_lst = [df_sax.T.reset_index(drop=True) for df_sax in df_sax_lst]
 
     return df_sax_lst, start, end
 
 
-def _compute_collisions(df_sax_lst, num_projections, mask_size, seed=1):
+def _compute_collisions(df_sax_lst, sax_variant, num_projections, mask_size, seed=1):
     """
     Compute the number of collisions between each subsequence in its symbolic
     representation when projecting them into a lower-dimensional space at
     random.
 
     :param df_sax_lst: list of len(df_sax_lst) = num_ts
-        Contains a dataframe of shape (num_subsequences, num_segments) for each
-        time series with its corresponding subsequences.
+        Contains a dataframe of shape
+        (num_subsequences, num_segments * symbols_per_segment) for each time
+        series with its corresponding subsequences.
         The subsequences are contained row-wise in their respective
         symbolic representation in each dataframe. The index of a
         subsequence within its dataframe corresponds to the extraction
         order of subsequences from the original time series.
+    :param sax_variant: AbstractSAX
+        The SAX variant that was used to transform the subsequences into their
+        symbolic representations.
     :param num_projections: int
         The number of consecutive random projections that shall be done for
         each given set of subsequences (i.e. dataframe).
@@ -112,8 +143,16 @@ def _compute_collisions(df_sax_lst, num_projections, mask_size, seed=1):
         collisions = {}
         for it in range(num_projections):
             random.seed(seed + i + it)
-            cols_mask = sorted(random.sample(range(current_subsequences.shape[1]), mask_size))
-            df_sax_masked = pd.DataFrame(current_subsequences.iloc[:, cols_mask])
+            num_cols_adjusted = current_subsequences.shape[1] // sax_variant.symbols_per_segment
+            # randomly select segments that shall be used for projection
+            cols_mask = sorted(random.sample(range(num_cols_adjusted), mask_size))
+            cols_mask_adjusted = []
+            for col_num in cols_mask:
+                # first symbol of a segment
+                col_num *= sax_variant.symbols_per_segment
+                # catch all symbols of a segment
+                cols_mask_adjusted.extend(list(range(col_num, col_num + sax_variant.symbols_per_segment)))
+            df_sax_masked = pd.DataFrame(current_subsequences.iloc[:, cols_mask_adjusted])
 
             # only compare current row with rows of higher index to avoid
             # duplicate comparisons
@@ -137,11 +176,53 @@ def _compute_collisions(df_sax_lst, num_projections, mask_size, seed=1):
     return collisions_lst
 
 
-def _filter_eucl_dist(df_norm_ts, start, end, promising_motifs_mindist, fst_matching_subsequence, snd_matching_subsequence, radius):
+def _filter_eucl_dist(df_norm_ts, start, end, promising_motifs, fst_matching_subsequence, snd_matching_subsequence, radius):
+    """
+    Compute the Euclidean distance between the two subsequences given by
+    'fst_matching_subsequence' and 'snd_matching_subsequence' and all other
+    subsequences given by 'promising_motifs'.
+    This filters out the subsequences their Euclidean distance compared to the
+    two given subsequences is greater than 'radius'. The remaining subsequences
+    are said to be within 2 * 'radius' of the two given subsequences and are
+    declared as motifs of these two.
+
+    :param df_norm_ts: pd.Series of shape (ts_size,)
+        The normalized time series whose subsequences shall be used to compute
+        the Euclidean distance between them and the two given subsequences.
+    :param start: np.array of shape (num_subsequences,)
+        The index of the start (inclusive) of each subsequence within its
+        original time series.
+    :param end: np.array of shape (num_subsequences,)
+        The index of the end (exclusive) of each subsequence within its
+        original time series.
+    :param promising_motifs: list
+        Contains the indexes of all subsequences based on the extraction order
+        from the original time series that have a 'MINDIST' based on their
+        symbolic representations that is smaller or equal than 'radius' with at
+        least one of 'fst_matching_subsequence' and 'snd_matching_subsequence'.
+    :param fst_matching_subsequence: pd.Series of shape (len_subsequences,)
+        The first subsequence for which the motifs within 'radius' based on
+        the Euclidean distance shall be found.
+    :param snd_matching_subsequence: pd.Series of shape (len_subsequences,)
+        The second subsequence for which the motifs within 'radius' based on
+        the Euclidean distance shall be found.
+    :param radius: float
+        The maximum Euclidean distance between two subsequences, such that they
+        are considered similar enough to be declared as motifs.
+    :return:
+        A list that contains the indexes of all subsequences based on the
+        extraction order from the original time series that have a Euclidean
+        distance that is smaller or equal than 'radius' with at least one of
+        the two given subsequences of 'fst_matching_subsequence' and
+        'snd_matching_subsequence'.
+        These subsequences are declared as motifs of 'fst_matching_subsequence'
+        and 'snd_matching_subsequence'.
+    """
+
     motifs = []
     # check euclidean distance between the original subsequences
     # based on the promising motifs that fulfill MINDIST
-    for idx in promising_motifs_mindist:
+    for idx in promising_motifs:
         fst_eucl_dist = np.linalg.norm(fst_matching_subsequence - df_norm_ts.iloc[start[idx]:end[idx]].reset_index(drop=True))
         snd_eucl_dist = np.linalg.norm(snd_matching_subsequence - df_norm_ts.iloc[start[idx]:end[idx]].reset_index(drop=True))
         if fst_eucl_dist <= radius or snd_eucl_dist <= radius:
@@ -154,6 +235,54 @@ def _filter_eucl_dist(df_norm_ts, start, end, promising_motifs_mindist, fst_matc
 
 
 def _filter_mindist(df_sax_ts, alphabet_size, promising_motifs, idxs, len_subsequence, radius):
+    """
+    Compute the 'MINDIST' (SAX distance) between the symbolic representations
+    of the two subsequences given by 'idxs' and all other symbolic
+    representations of subsequences given by 'promising_motifs'.
+    This filters out the subsequences their Euclidean distance compared to the
+    two subsequences given by 'idxs' is greater than 'radius'. It is based on
+    the fact that the 'MINDIST' between the symbolic representations of two
+    subsequences (or time series in general) lower bounds the Euclidean
+    distance between these two subsequences (or time series in general).
+    Therefore, if the 'MINDIST' is greater than 'radius' it automatically
+    implies that the Euclidean distance is greater than 'radius'.
+
+    :param df_sax_ts: dataframe of shape
+        (num_subsequences, num_segments * symbols_per_segment)
+        Contains the subsequences for a time series.
+        The subsequences are contained row-wise in their respective symbolic
+        representation. The index of a subsequence within the dataframe
+        corresponds to the extraction order of subsequences from the original
+        time series. Hence, it serves as a pointer into 'start' and 'end' for
+        the starting and ending index of the respective subsequence within its
+        original time series.
+    :param alphabet_size: int
+        The size of the alphabet that was used to compute the symbolic
+        representations of the subsequences for which the 'MINDIST' shall be
+        computed.
+    :param promising_motifs: list of len(promising_motifs) = num_promising_motifs
+        Contains the indexes of the subsequences based on the extraction order
+        from the original time series that meet the minimum collision count
+        threshold with both of the two given subsequences with indexes 'idxs'.
+    :param idxs: tuple of shape (int, int)
+        The indexes of the two subsequences based on the extraction order from
+        the original time series for which the 'MINDIST' shall be computed on
+        the symbolic representations with the given subsequences based on
+        'promising_motifs'.
+    :param len_subsequence: int
+        The length of the subsequences for which the 'MINDIST' shall be
+        computed.
+    :param radius: float
+        The maximum Euclidean distance between two subsequences, such that they
+        are considered similar enough to be declared as motifs.
+    :return:
+        A list that contains the indexes of all subsequences based on the
+        extraction order from the original time series that have a 'MINDIST'
+        based on their symbolic representations that is smaller or equal than
+        'radius' with at least one of the two given subsequences with indexes
+        'idxs'.
+    """
+
     promising_motifs_sax_reprs = [(idx, df_sax_ts.iloc[idx]) for idx in promising_motifs]
     fst_matching_subsequence_sax_repr = df_sax_ts.iloc[idxs[0]]
     snd_matching_subsequence_sax_repr = df_sax_ts.iloc[idxs[1]]
@@ -174,7 +303,7 @@ def _filter_mindist(df_sax_ts, alphabet_size, promising_motifs, idxs, len_subseq
     return promising_motifs_mindist
 
 
-def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_sax_lst, alphabet_size, len_subsequence):
+def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_sax_lst, sax_variant, len_subsequence):
     """
     Compute motifs based on the number of collisions between two symbolic
     representations corresponding to two subsequences.
@@ -204,17 +333,25 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
         The index of the end (exclusive) of each subsequence within its
         original time series.
     :param df_sax_lst: list of len(df_sax_lst) = num_ts
-        Contains a dataframe of shape (num_subsequences, num_segments) for each
-        time series with its corresponding subsequences.
+        Contains a dataframe of shape
+        (num_subsequences, num_segments * symbols_per_segment) for each time
+        series with its corresponding subsequences.
         The subsequences are contained row-wise in their respective symbolic
         representation in each dataframe. The index of a subsequence within its
         dataframe corresponds to the extraction order of subsequences from the
         original time series. Hence, it serves as a pointer into 'start' and
         'end' for the starting and ending index of the respective subsequence
         within its original time series.
-    :param alphabet_size: int
-        The size of the alphabet that is used to compute the 'MINDIST' (SAX
-        distance) between two subsequences in its symbolic representation.
+    :param sax_variant: AbstractSAX
+        The SAX variant that was used to transform the subsequences into their
+        symbolic representations and whose alphabet size is used to compute the
+        'MINDIST' (SAX distance) between two subsequences in their symbolic
+        representations.
+        Note: The lower bounding property of the 'MINDIST' compared to the
+        Euclidean distance is not fulfilled for the 1d-SAX. Therefore, for the
+        1d-SAX the Euclidean distance between the original values of two
+        subsequences is directly computed without any pre-filtering based on
+        their 'MINDIST'.
     :param len_subsequence: int
         The length of the extracted subsequences from the original time series.
     :return:
@@ -229,15 +366,15 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
             'end'.
     """
 
-    num_ts = df_norm.shape[1]
-    promising_collisions_lst = [{idxs: count for idxs, count in collisions_lst[i].items()
+    promising_collisions_lst = [{idxs: count for idxs, count in collisions.items()
                                  if count >= min_collisions}
-                                for i in range(num_ts)]
+                                for collisions in collisions_lst]
     # collisions ordered by count
-    promising_collisions_lst = [dict(sorted(promising_collisions_lst[i].items(),
+    promising_collisions_lst = [dict(sorted(promising_collisions.items(),
                                             key=lambda tup: tup[1], reverse=True))
-                                for i in range(num_ts)]
+                                for promising_collisions in promising_collisions_lst]
 
+    num_ts = df_norm.shape[1]
     motifs_lst = []
     for i in range(num_ts):
         current_collisions_idxs = list(promising_collisions_lst[i].keys())
@@ -272,8 +409,11 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
                 # promising motifs need to be similar to both of the two
                 # current matching subsequences (i.e. high count for both)
                 promising_motifs = list(set(fst_promising_motifs).intersection(snd_promising_motifs))
-                promising_motifs_mindist = _filter_mindist(df_sax_lst[i], alphabet_size, promising_motifs, idxs, len_subsequence, radius)
-                motifs = _filter_eucl_dist(df_norm.iloc[:, i], start, end, promising_motifs_mindist, fst_matching_subsequence, snd_matching_subsequence, radius)
+                # lower bounding property of 'MINDIST' compared to Euclidean
+                # distance is not fulfilled for 1d-SAX
+                if not isinstance(sax_variant, OneDSAX):
+                    promising_motifs = _filter_mindist(df_sax_lst[i], sax_variant.alphabet_size, promising_motifs, idxs, len_subsequence, radius)
+                motifs = _filter_eucl_dist(df_norm.iloc[:, i], start, end, promising_motifs, fst_matching_subsequence, snd_matching_subsequence, radius)
                 motif.extend(motifs)
                 if motif:
                     motif.sort()
@@ -287,11 +427,128 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
     return motifs_lst
 
 
-def do_random_projection(df_norm, len_subsequence, window_size, alphabet_size, num_projections, mask_size, radius, min_collisions, gap=1, seed=1):
-    df_sax_lst, start, end = _get_sax_subsequences(df_norm, len_subsequence, window_size, alphabet_size, gap)
-    collisions_lst = _compute_collisions(df_sax_lst, num_projections, mask_size, seed)
-    motifs_lst = _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_sax_lst, alphabet_size, len_subsequence)
+def do_random_projection(df_norm, len_subsequence, window_size, sax_variant, num_projections, mask_size, radius, min_collisions, gap=1, seed=1):
+    """
+    Execute the random projection algorithm for motif discovery in a time
+    series based on its subsequences and their symbolic representations.
+
+    :param df_norm: dataframe of shape (ts_size, num_ts)
+        The normalized time series dataset for which motifs shall be found
+        based on the extraction of subsequences and their symbolic
+        representations.
+    :param len_subsequence: int
+        The length the extracted subsequences shall have.
+    :param window_size: int
+        The size of the window that is used to transform each subsequence into
+        its PAA representation.
+    :param sax_variant: AbstractSAX
+        The SAX variant that shall be used to transform the PAA representation
+        of a subsequence into its symbolic representation.
+    :param num_projections: int
+        The number of random projections of the symbolic representations of
+        subsequences that shall be done to compare them in the resulting
+        lower-dimensional spaces.
+    :param mask_size: int
+        The dimension of the lower-dimensional space, the symbolic
+        representations of the given subsequences shall be projected in.
+    :param radius: float
+        The maximum Euclidean distance between two subsequences, such that they
+        are considered similar enough to be declared as motifs.
+    :param min_collisions: int
+        The minimum number of collisions between two subsequences based on
+        their respective projected symbolic representations such that they are
+        considered potential motifs that will be considered for finding motifs.
+    :param gap: int (default = 1)
+        The gap between two consecutive subsequences within the corresponding
+        time series when extracting them.
+    :param seed: int (default = 1)
+        The seed that shall be used as a starting point to randomly choose the
+        dimensions of the symbolic representations of the subsequences that
+        shall be compared in the resulting lower-dimensional space.
+    :return:
+        motifs_lst: list of len(motifs_lst) = num_ts
+            Contains a two-dimensional list for each time series.
+            In this two-dimensional list, each sub-list corresponds to a motif
+            pattern. Hence, each of these sub-lists contains the indexes of the
+            start and end of the respective motifs belonging to the respective
+            motif pattern in the respective original time series.
+            With such an index of a motif, the corresponding subsequence in the
+            original time series can be queried with the help of 'start' and
+            'end'.
+        start: np.array of shape (num_subsequences,)
+            The index of the start (inclusive) of each subsequence within its
+            original time series.
+        end: np.array of shape (num_subsequences,)
+            The index of the end (exclusive) of each subsequence within its
+            original time series.
+    :raises:
+        ValueError: If 'len_subsequence' > ts_size.
+        ValueError: If 'window_size' > 'len_subsequence'.
+        ValueError: If 'sax_variant' does not inherit from 'AbstractSAX'.
+        ValueError: If 'mask_size' >= num_segments.
+        ValueError: If 'min_collisions' > 'num_projections'.
+    """
+
+    if len_subsequence > df_norm.shape[0]:
+        raise ValueError("The length of a subsequence needs to be smaller or "
+                         "equal to the length of the time series the "
+                         "subsequence shall be extracted.")
+    if window_size > len_subsequence:
+        raise ValueError("The size of the window with which the "
+                         "subsequences are segmented needs to be smaller or "
+                         "equal to the length of the subsequences.")
+    if not isinstance(sax_variant, AbstractSAX):
+        raise ValueError("The symbolic representations of the subsequences "
+                         "can only be computed by on of the SAX variants "
+                         "that inherit from 'AbstractSAX'.")
+    num_segments = constant_segmentation(len_subsequence, window_size)[2]
+    if mask_size >= num_segments:
+        raise ValueError("The symbolic representations of the subsequences "
+                         "need to be projected in a strictly lower-"
+                         "dimensional space.")
+    if min_collisions > num_projections:
+        raise ValueError("The number of collisions between two symbolic "
+                         "representations is strictly upper bounded by the "
+                         "number of comparisons between these two symbolic "
+                         "representations in a lower-dimensional space.")
+
+    df_sax_lst, start, end = _get_sax_subsequences(df_norm, len_subsequence, window_size, sax_variant, gap)
+    collisions_lst = _compute_collisions(df_sax_lst, sax_variant, num_projections, mask_size, seed)
+    motifs_lst = _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_sax_lst, sax_variant, len_subsequence)
     return motifs_lst, start, end
+
+
+def get_motifs_per_subsequence(motifs_lst):
+    """
+    Compute all motifs that belong to a subsequence.
+
+    :param motifs_lst: list of len(motifs_lst) = num_ts
+        Contains a two-dimensional list for each time series.
+        In this two-dimensional list, each sub-list corresponds to a motif
+        pattern. Hence, each of these sub-lists contains the indexes of the
+        start and end of the respective motifs belonging to the respective
+        motif pattern in the respective original time series.
+    :return:
+        list of len(motifs_per_subsequence_lst) = num_ts
+            It contains a dictionary for each time series. Each dictionary has
+            the indexes of the subsequences of the respective time series that
+            are contained in a motif pattern as keys. The value of a key is a
+            list that contains the indexes of all subsequences that are motifs
+            compared to the subsequence corresponding to the key.
+    """
+
+    motifs_per_subsequence_lst = []
+    for ts_motifs in motifs_lst:
+        motifs_per_subsequence = {}
+        for motif_pattern in ts_motifs:
+            for subsequence_idx in motif_pattern:
+                motifs_per_subsequence[subsequence_idx] = [subsequence_idx_ for subsequence_idx_
+                                                           in motif_pattern if subsequence_idx_ != subsequence_idx]
+        # sort in ascending order by the indexes of the subsequences
+        motifs_per_subsequence_lst.append(dict(sorted(motifs_per_subsequence.items(),
+                                                      key=lambda tup: tup[0])))
+
+    return motifs_per_subsequence_lst
 
 
 def remove_trivial_motifs(motifs_per_subsequence_lst):
@@ -337,36 +594,3 @@ def remove_trivial_motifs(motifs_per_subsequence_lst):
         removed_lst.append(removed)
 
     return removed_lst
-
-
-def get_motifs_per_subsequence(motifs_lst):
-    """
-    Compute all motifs that belong to a subsequence.
-
-    :param motifs_lst: list of len(motifs_lst) = num_ts
-        Contains a two-dimensional list for each time series.
-        In this two-dimensional list, each sub-list corresponds to a motif
-        pattern. Hence, each of these sub-lists contains the indexes of the
-        start and end of the respective motifs belonging to the respective
-        motif pattern in the respective original time series.
-    :return:
-        list of len(motifs_per_subsequence_lst) = num_ts
-            It contains a dictionary for each time series. Each dictionary has
-            the indexes of the subsequences of the respective time series that
-            are contained in a motif pattern as keys. The value of a key is a
-            list that contains the indexes of all subsequences that are motifs
-            compared to the subsequence corresponding to the key.
-    """
-
-    motifs_per_subsequence_lst = []
-    for ts_motifs in motifs_lst:
-        motifs_per_subsequence = {}
-        for motif_pattern in ts_motifs:
-            for subsequence_idx in motif_pattern:
-                motifs_per_subsequence[subsequence_idx] = [subsequence_idx_ for subsequence_idx_
-                                                           in motif_pattern if subsequence_idx_ != subsequence_idx]
-        # sort in an ascending order by the indexes of the subsequences
-        motifs_per_subsequence_lst.append(dict(sorted(motifs_per_subsequence.items(),
-                                                      key=lambda tup: tup[0])))
-
-    return motifs_per_subsequence_lst

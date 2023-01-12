@@ -62,6 +62,27 @@ def constant_segmentation(ts_size, window_size):
 
 
 def constant_segmentation_overlapping(ts_size, len_subsequence, gap=1):
+    """
+    Compute the segment boundaries for the extraction of overlapping
+    subsequences from original time series.
+
+    :param ts_size: int
+        The size of the time series from that subsequences shall be extracted.
+    :param len_subsequence: int
+        The length of the subsequences that shall be extracted from a time
+        series.
+    :param gap: int (default = 1)
+        The gap between two consecutive subsequences within the corresponding
+        time series when extracting them.
+    :return:
+        start: np.array of shape (num_subsequences,)
+            The index of the start (inclusive) of each subsequence within its
+            original time series.
+        end: np.array of shape (num_subsequences,)
+            The index of the end (exclusive) of each subsequence within its
+            original time series.
+    """
+
     start = np.arange(0, ts_size - len_subsequence + 1, gap)
     end = np.arange(len_subsequence, ts_size + 1, gap)
     return start, end

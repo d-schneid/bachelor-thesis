@@ -26,7 +26,7 @@ class SAX(AbstractSAX):
     def __init__(self, alphabet_size=3):
         super().__init__(alphabet_size=alphabet_size)
 
-    def transform(self, df_paa):
+    def transform(self, df_paa, *args, **kwargs):
         """
         Transform the PAA representation of each time series into its SAX
         representation (i.e. assign each PAA representation its respective
@@ -36,7 +36,8 @@ class SAX(AbstractSAX):
         representations (e.g. normalization) is the responsibility of the user.
 
         :param df_paa: dataframe of shape (num_segments, num_ts)
-            The PAA representations of a time series dataset.
+            The PAA representations of a time series dataset that shall be
+            transformed into their SAX representations.
         :return:
             dataframe of shape (num_segments, num_ts)
         """

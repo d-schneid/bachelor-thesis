@@ -103,6 +103,7 @@ class OneDSAX(AbstractSAX):
                          in range(ord('a'), ord('a') + self.alphabet_size_slope)]
         self.alphabet_slope = np.array(letters_slope)
         self.var_slope = var_slope
+        self.symbols_per_segment = 2
         # breakpoints for slope values of the segments are determined during
         # 1d-SAX transformation, when 'window_size' is known
 
@@ -122,17 +123,17 @@ class OneDSAX(AbstractSAX):
         self.breakpoints_slope = breakpoints(self.alphabet_size_slope,
                                              scale=self.var_slope)
 
-    def transform(self, df_norm, df_paa, window_size):
+    def transform(self, df_paa, df_norm, window_size):
         """
         Transform the normalized time series dataset into its 1d-SAX
         representations (i.e. assign each time series its respective 1d-SAX
         word).
 
+        :param df_paa: dataframe of shape (num_segments, num_ts)
+            The PAA representations of the given normalized time series dataset.
         :param df_norm: dataframe of shape (ts_size, num_ts)
             The normalized time series dataset that shall be transformed into
             its 1d-SAX representations.
-        :param df_paa: dataframe of shape (num_segments, num_ts)
-            The PAA representations of the given normalized time series dataset.
         :param window_size: int
             The size of the segments with which the given PAA representations
             were created.

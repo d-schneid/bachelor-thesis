@@ -41,6 +41,7 @@ class ExtendedSAX(AbstractSAX):
 
     def __init__(self, alphabet_size=3):
         super().__init__(alphabet_size=alphabet_size)
+        self.symbols_per_segment = 3
 
     def _transform(self, segment_list):
         """
@@ -62,19 +63,19 @@ class ExtendedSAX(AbstractSAX):
             np.searchsorted(self.breakpoints, tup[1], side="right")]))
         return df_sax.applymap(lambda tup: [tup])
 
-    def transform(self, df_norm, df_paa, window_size):
+    def transform(self, df_paa, df_norm, window_size):
         """
         Transform each time series into its eSAX representation.
         It does not modify the given time series before computation, such as
         normalization. Therefore, the modification of the time series (e.g.
         normalization) is the responsibility of the user.
 
-        :param df_norm: dataframe of shape (ts_size, num_ts)
-            The normalized time series dataset that shall be transformed into
-            an eSAX representation.
         :param df_paa: dataframe of shape (num_segments, num_ts)
             The PAA representations of the given normalized time series
             dataset.
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The normalized time series dataset that shall be transformed into
+            an eSAX representation.
         :param window_size: int
             The size of the segments with which the given PAA representations
             were created.
