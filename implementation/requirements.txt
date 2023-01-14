@@ -8,3 +8,4 @@ scipy~=1.9.3
 matplotlib~=3.6.2
 statsmodels~=0.13.5
 sktime~=0.14.1
+stumpy~=1.11.1
