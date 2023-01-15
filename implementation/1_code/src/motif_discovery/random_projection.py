@@ -379,9 +379,14 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
     for i in range(num_ts):
         current_collisions_idxs = list(promising_collisions_lst[i].keys())
         ts_motifs = []
+        # indexes that are already assigned to a motif
+        assigned = set()
         for idxs in current_collisions_idxs:
-            # delete current indexes to avoid exploring it again
-            current_collisions_idxs[:] = [idxs_ for idxs_ in current_collisions_idxs if idxs_ != idxs]
+            # motifs are disjoint
+            # at least one of the two current subsequences already within
+            # 'radius' of a previously encountered subsequence
+            if idxs[0] in assigned or idxs[1] in assigned:
+                continue
 
             # indexes are pointers into 'start' and 'end' for the starting and
             # ending index of the respective subsequence within the original
@@ -418,9 +423,7 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
                 if motif:
                     motif.sort()
                     ts_motifs.append(motif)
-                # motifs are disjoint
-                current_collisions_idxs[:] = [idxs_ for idxs_ in current_collisions_idxs
-                                              if idxs_[0] not in motif and idxs_[1] not in motif]
+                    assigned.update(motif)
 
         motifs_lst.append(ts_motifs)
 

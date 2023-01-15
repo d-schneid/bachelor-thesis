@@ -332,8 +332,8 @@ def do_matrix_profile(df_norm, window_size, sax_variant, num_compare_segments,
         sax_word_linearized_encoded = df_sax_linearized_encoded.iloc[:, idx]
         for idxs in possible_motifs_idxs:
             # motifs are disjoint
-            # current subsequence already within 'max_distance' of a previously
-            # encountered subsequence
+            # at least one of the two current subsequences already within
+            # 'max_distance' of a previously encountered subsequence
             if idxs[0] in assigned or idxs[1] in assigned:
                 continue
 
