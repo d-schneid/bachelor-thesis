@@ -3,175 +3,369 @@ import numpy as np
 from scipy.spatial import distance
 
 from approximation.paa import PAA
-from utils.utils import constant_segmentation_overlapping
+from utils.utils import constant_segmentation_overlapping, constant_segmentation
 from discretization.sax.abstract_sax import linearize_sax_word
 from discretization.sax.one_d_sax import OneDSAX
 
 
-def _map_symbols_to_numbers_2(df_sax_linearized, sax_variant):
-    mapping = dict(zip(sax_variant.alphabet,
-                       [i for i in range(sax_variant.alphabet_size)]))
+def _encode_symbols(symbol_split, sax_variant):
+    """
+    Encode SAX symbols to numbers. Symbol 'a' is assigned 0, symbol 'b' is
+    assigned 1 and so on.
 
+    :param symbol_split: list of len(symbol_split) = num_ts
+        Contains lists of the SAX representations for each time series,
+        but split according to the number of symbols per segment for the given
+        'sax_variant'. Hence, each sub-list contains one dataframe for each
+        number of symbols per segment.
+    :param sax_variant: AbstractSAX
+        The SAX variant that was used to create the given SAX representations.
+    :return:
+        list of len(symbol_split_encoded) = num_ts
+            Has the same structure as the given list 'symbol_split', but with
+            encoded symbols.
+    """
+
+    mapping = dict(zip(sax_variant.alphabet,
+                       [num for num in range(sax_variant.alphabet_size)]))
     if isinstance(sax_variant, OneDSAX):
         if sax_variant.alphabet_size_slope > sax_variant.alphabet_size:
             mapping = dict(zip(sax_variant.alphabet_slope,
-                               [i for i in
-                                range(sax_variant.alphabet_size_slope)]))
+                               [num for num in range(sax_variant.alphabet_size_slope)]))
 
-    return df_sax_linearized.replace(to_replace=mapping)
+    symbol_split_encoded = []
+    for sax_word_split in symbol_split:
+        symbol_split_encoded.append([sax_symbol_split.replace(to_replace=mapping)
+                                     for sax_symbol_split in sax_word_split])
 
-
-def _map_symbols_to_numbers(splitted, sax_variant):
-    mapping = dict(zip(sax_variant.alphabet,
-                       [i for i in range(sax_variant.alphabet_size)]))
-
-    if isinstance(sax_variant, OneDSAX):
-        if sax_variant.alphabet_size_slope > sax_variant.alphabet_size:
-            mapping = dict(zip(sax_variant.alphabet_slope,
-                               [i for i in
-                                range(sax_variant.alphabet_size_slope)]))
-
-    mapped = []
-    for ts in splitted:
-        mapped.append([df.replace(to_replace=mapping) for df in ts])
-
-    return mapped
+    return symbol_split_encoded
 
 
-def _compute_matrix_profile_dikt(mapped_ts, len_symbolic_subsequence, max_distance):
-    mps = []
-    for df_mapped in mapped_ts:
-        ts = np.array(df_mapped.iloc[:, 0]).astype(np.float64)
-        mp = stumpy.stump(ts, m=len_symbolic_subsequence, normalize=False, p=1.0)[:, :2]
-        mps.append(mp)
+def _compute_possible_motifs(sax_word_split_encoded, num_compare_segments,
+                             max_distance, normalize, p):
+    """
+    Compute possible motifs based on the nearest neighbor of each subsequence
+    computed by the Matrix Profile. This is done for each split of the SAX word
+    based on the number of symbols per segment. As a result, the motifs from
+    each split are merged.
 
-    dikts = []
-    for mp in mps:
-        dikt = {}
-        for idx, elem in enumerate(mp):
-            poss_match = mp[elem[1]]
-            # nearest neighbor of poss_match already found
-            # elem and poss_match are not nearest neighbors
-            # not all subsequences have nearest neighbors, because distance is not symmetric
-            # avoid checking pairs that are not nearest neighbors
-            # and avoid checking nearest neighbors from again from other direction
-            if (poss_match[1], elem[1]) in dikt or (elem[1], poss_match[1]) in dikt:
+    :param sax_word_split_encoded:
+        list of len(sax_word_split_encoded) = number of symbols per segment
+        Contains an encoded dataframe for each split based on the number of
+        symbols per segment.
+    :param num_compare_segments: int
+        The window size to extract subsequences. In the encoded case, this
+        corresponds to the number of segments that shall be extracted and
+        compared to each other.
+    :param max_distance: float
+        The upper bound for the distance between a subsequence and a query,
+        such that the subsequence is considered similar to the query.
+    :param normalize: bool
+        True if the encoded SAX words shall be z-normalized before applying the
+        Matrix Profile.
+        False otherwise.
+    :param p: float
+        The p-norm to apply for computing the Minkowski distance between a
+        subsequence and a query to check for their similarity.
+    :return:
+        A dictionary that contains tuples with the indexes of two nearest
+        neighbors as keys and the corresponding distance as values.
+        The subsequences corresponding to the contained indexes are considered
+        as a possible motif.
+    """
+
+    matrix_profiles = []
+    for sax_word_encoded in sax_word_split_encoded:
+        # adjust format for Matrix Profile
+        sax_word_encoded = np.array(sax_word_encoded.iloc[:, 0]).astype(np.float64)
+        # contains nearest neighbors with respective distances
+        matrix_profile = stumpy.stump(sax_word_encoded, m=num_compare_segments,
+                                      normalize=normalize, p=p)[:, :2]
+        matrix_profiles.append(matrix_profile)
+
+    possible_motifs_lst = []
+    for matrix_profile in matrix_profiles:
+        possible_motifs = {}
+        for idx, subsequence in enumerate(matrix_profile):
+            nearest_neighbor = matrix_profile[subsequence[1]]
+            # 'nearest_neighbor' of 'subsequence' has another neighbor with
+            # that it has a lower distance than to 'subsequence'
+            # not all subsequences have reciprocal nearest neighbors, because
+            # being a nearest neighbor is not symmetric
+            # therefore, avoid checking pairs that are not reciprocal nearest
+            # neighbors
+            # also, avoid checking reciprocal nearest neighbors twice
+            if (nearest_neighbor[1], subsequence[1]) in possible_motifs or\
+                    (subsequence[1], nearest_neighbor[1]) in possible_motifs:
                 continue
-            # possible match points back, so it is a match
-            # meaning distance is symmetric
-            # does not need to point back, because it could have another
-            # subsequence to which its distance is smaller
-            if poss_match[1] == idx:
-                # check if two subsequences are within 'max_distance' of each other
-                # distance is symmetric: elem[0] == poss_match[0]
-                if elem[0] <= max_distance:
-                    dikt[(poss_match[1], elem[1])] = elem[0]
 
-        dikts.append(dikt)
-    # if same key, then take this element with maximum distance
-    # already high distance for one symbolic dimension
-    merged_dikt = {k: max(d.get(k, 0.0) for d in dikts) for k in set().union(*dikts)}
+            # reciprocal nearest neighbors
+            if nearest_neighbor[1] == idx:
+                # reciprocal nearest neighbors are within 'max_distance' of
+                # each other
+                # distance is symmetric: subsequence[0] == nearest_neighbor[0]
+                if subsequence[0] <= max_distance:
+                    possible_motifs[(idx, subsequence[1])] = subsequence[0]
 
-    # matches with the smallest distance first
-    # retrieve most probable motifs first
-    # every idx is contained at leaste once
-    return dict(sorted(merged_dikt.items(), key=lambda tup: tup[1]))
+        possible_motifs_lst.append(possible_motifs)
+
+    # for overlapping possible motifs, take those with the higher distance,
+    # because this is a lower bound for the distance between these possible
+    # motifs on the full SAX word
+    merged_possible_motifs = {nearest_neighbors: max(possible_motifs.get(nearest_neighbors, 0.0)
+                                                     for possible_motifs in possible_motifs_lst)
+                              for nearest_neighbors in set().union(*possible_motifs_lst)}
+
+    # nearest neighbors with the smallest distance first in order to retrieve
+    # most promising subsequences for a motif first
+    return dict(sorted(merged_possible_motifs.items(), key=lambda tup: tup[1]))
 
 
-def _match(ts_mapped, idxs, start, end, max_distance, ts_sax_linearized, query_fst_linearized, query_snd_linearized, start_linearized, end_linearized):
-    # all indexes over all symbolic positions for the given two queries
-    lst_fst, lst_snd = [], []
-    # iterate through different symbolic positions
-    for idx, mapped in enumerate(ts_mapped):
-        ts = np.array(mapped.iloc[:, 0]).astype(np.float64)
+def _find_motif(query, sax_word_encoded, max_distance, normalize, p):
+    """
+    Find the indexes of all subsequences within 'sax_word_encoded' that are
+    within 'max_distance' of the 'query'. The self-match will be found as well.
 
-        query_fst = np.array(mapped.iloc[start[idxs[0]]:end[idxs[0]], 0]).astype(np.float64)
-        # self-match as well
-        motif_idxs_fst = stumpy.match(query_fst, ts, max_distance=float(max_distance), max_matches=None, normalize=False, p=1.0)[:, 1]
-        lst_fst.extend(motif_idxs_fst)
+    :param query: np.array of shape (num_compare_segments,)
+        The query sequence for that similar subsequences shall be found in
+        'sax_word_encoded'.
+    :param sax_word_encoded: np.array of shape (num_segments,)
+        The time series in that similar subsequences of the 'query' shall be
+        found.
+    :param max_distance: float
+        The maximum distance between the 'query' and a subsequence from
+        'sax_word_encoded' such that the subsequence is considered similar.
+    :param normalize: bool
+        True if the 'query' and 'sax_word_encoded' shall be z-normalized before
+        computing distances.
+        False otherwise.
+    :param p: float
+        The p-norm to apply for computing the Minkowski distance between a
+        subsequence from 'sax_word_encoded' and the 'query' to check for their
+        similarity.
+    :return:
+        A list with the start indexes of the subsequences from
+        'sax_word_encoded' that are considered similar to the given 'query'.
+    """
 
-        query_snd = np.array(mapped.iloc[start[idxs[1]]:end[idxs[1]], 0]).astype(np.float64)
-        motif_idxs_snd = stumpy.match(query_snd, ts, max_distance=float(max_distance), max_matches=None, normalize=False, p=1.0)[:, 1]
-        lst_snd.extend(motif_idxs_snd)
+    return stumpy.match(query, sax_word_encoded, max_distance=max_distance,
+                        normalize=normalize, p=p)[:, 1]
 
-    # union indexes, because all these indexes are within 'max_distance' in at
-    # least one query over all symbolic positions
-    to_be_checked = list(set(lst_fst) | set(lst_snd))
+
+def _build_motif(sax_word_split_encoded, idxs, start, end, max_distance,
+                 sax_word_linearized_encoded, fst_query_linearized_encoded,
+                 snd_query_linearized_encoded, start_linearized,
+                 end_linearized, normalize, p):
+    """
+    Find all similar subsequences that are within 'max_distance' compared to
+    at least one of the two given 'fst_query_linearized_encoded' and
+    'snd_query_linearized_encoded'. These similar subsequences belong to the
+    motif of 'fst_query_linearized_encoded' and 'snd_query_linearized_encoded'.
+
+    :param sax_word_split_encoded:
+        list of len(sax_word_split_encoded) = number of symbols per segment
+        Contains an encoded dataframe for each split based on the number of
+        symbols per segment.
+    :param idxs: tuple
+        Contains the indexes of 'fst_query_linearized_encoded' and
+        'snd_query_linearized_encoded' based on the given 'start' and 'end'.
+    :param start: np.array of shape (num_encoded_subsequences,)
+        The index of the start (inclusive) of each encoded subsequence within
+        its encoded SAX representation.
+    :param end: np.array of shape (num_encoded_subsequences,)
+        The index of the end (exclusive) of each encoded subsequence within its
+        encoded SAX representation.
+    :param max_distance: float
+        The maximum distance between 'fst_query_linearized_encoded' or
+        'snd_query_linearized_encoded' with an encoded subsequence, such that
+        the encoded subsequence is considered similar.
+    :param sax_word_linearized_encoded:
+        pd.Series of shape (num_segments * num_symbols_per_segment,)
+        The linearized and encoded SAX representation in that motifs for
+        'fst_query_linearized_encoded' and 'snd_query_linearized_encoded' shall
+        be found.
+    :param fst_query_linearized_encoded:
+        pd.Series of shape (num_compare_segments * num_symbols_per_segment,)
+        The first query for that similar subsequences in
+        'sax_word_linearized_encoded' shall be found.
+    :param snd_query_linearized_encoded:
+        pd.Series of shape (num_compare_segments * num_symbols_per_segment,)
+        The second query for that similar subsequences in
+        'sax_word_linearized_encoded' shall be found.
+    :param start_linearized: np.array of shape (num_encoded_subsequences,)
+        The index of the start (inclusive) of each encoded and linearized
+        subsequence within its encoded and linearized SAX representation.
+    :param end_linearized: np.array of shape (num_encoded_subsequences,)
+        The index of the end (exclusive) of each encoded and linearized
+        subsequence within its encoded and linearized SAX representation.
+    :param normalize: bool
+        True if the queries and the queried time series shall be z-normalized
+        before computing distances.
+        False otherwise.
+    :param p: float
+        The p-norm to apply for computing the Minkowski distance between the
+        two given queries and subsequences to check for their similarity.
+    :return:
+        A list that contains the starting indexes of the subsequences that
+        belong to the motif of the two given queries.
+    """
+
+    fst_motif_idxs, snd_motif_idxs = [], []
+    for idx, sax_word_encoded in enumerate(sax_word_split_encoded):
+        sax_word_encoded = np.array(sax_word_encoded.iloc[:, 0]).astype(np.float64)
+
+        fst_query = sax_word_encoded[start[idxs[0]]:end[idxs[0]]]
+        fst_motif_idxs.extend(_find_motif(fst_query, sax_word_encoded, max_distance, normalize, p))
+
+        snd_query = sax_word_encoded[start[idxs[1]]:end[idxs[1]]]
+        snd_motif_idxs.extend(_find_motif(snd_query, sax_word_encoded, max_distance, normalize, p))
+
+    # union, because all these subsequences are within 'max_distance' for at
+    # least one of the two queries and for at least one symbolic position based
+    # on the number of symbols per segment
+    possible_motifs_idxs = list(set(fst_motif_idxs) | set(snd_motif_idxs))
     motif = []
-    # adjust for considering 'max_distance' over all symbolic positions
-    # compute distance on linearized SAX representations
-    for idx in to_be_checked:
-        symbolic_ts = ts_sax_linearized.iloc[start_linearized[idx]:end_linearized[idx]]
-        dist_fst = distance.minkowski(query_fst_linearized, symbolic_ts, p=1.0)
-        dist_snd = distance.minkowski(query_snd_linearized, symbolic_ts, p=1.0)
-        # find motifs within max_distance of at least one of the two subsequences
-        # will also find itself again (distance is zero)
-        if dist_fst <= max_distance or dist_snd <= max_distance:
+    # find true motifs by considering 'max_distance' on full linearized SAX
+    # words
+    for idx in possible_motifs_idxs:
+        possible_motif_linearized_encoded = sax_word_linearized_encoded.iloc[start_linearized[idx]:end_linearized[idx]]
+        fst_dist = distance.minkowski(fst_query_linearized_encoded, possible_motif_linearized_encoded, p=p)
+        snd_dist = distance.minkowski(snd_query_linearized_encoded, possible_motif_linearized_encoded, p=p)
+        # true motif is within 'max_distance' of at least one of the two given
+        # queries
+        if fst_dist <= max_distance or snd_dist <= max_distance:
             motif.append(idx)
 
     return motif
 
 
-def make(df_norm, sax_variant, len_symbolic_subsequence, window_size, max_distance, gap=1):
+def do_matrix_profile(df_norm, window_size, sax_variant, num_compare_segments,
+                      max_distance, normalize=False, p=1.0, gap=1):
+    """
+    Execute the algorithm based on the computation of the Matrix Profile for
+    motif discovery in a time series based on the subsequences of its symbolic
+    representation.
+
+    :param df_norm: dataframe of shape (ts_size, num_ts)
+        The normalized time series dataset for which motifs shall be found
+        based on their symbolic representations.
+    :param window_size: int
+        The size of the window that is used to transform each time series into
+        its PAA representation.
+    :param sax_variant: AbstractSAX
+        The SAX variant that shall be used to transform the PAA representation
+        of a time series into its symbolic representation.
+    :param num_compare_segments: int
+        The length the extracted subsequences of the SAX representation shall
+        have expressed in the number of segments of the SAX representation.
+    :param max_distance: float
+        The maximum distance between two subsequences, such that they
+        are considered similar enough to be declared as motifs.
+    :param normalize: bool (default = False)
+        True if the distances between two subsequences shall be computed on
+        z-normalized versions of them.
+        False otherwise.
+    :param p: float (default = 1.0)
+        The p-norm to apply for computing the Minkowski distance between two
+        encoded subsequences to check for their similarity.
+    :param gap: int (default = 1)
+        The gap between two consecutive encoded subsequences within the
+        corresponding encoded SAX representation when extracting them.
+    :return:
+        motifs_lst: list of len(motifs_lst) = num_ts
+            Contains a two-dimensional list for each time series.
+            In this two-dimensional list, each sub-list corresponds to a motif
+            pattern. Hence, each of these sub-lists contains the indexes of the
+            start and end of the respective motifs belonging to the respective
+            motif pattern in the respective original time series.
+            With such an index of a motif, the corresponding subsequence in the
+            original time series can be queried with the help of
+            'adjusted_start' and 'adjusted_end'.
+        start * window_size (adjusted_start):
+            np.array of shape (num_encoded_subsequences,)
+            The index of the start (inclusive) of each subsequence within its
+            original time series.
+        end * window_size (adjusted_end):
+            np.array of shape (num_encoded_subsequences,)
+            The index of the end (exclusive) of each subsequence within its
+            original time series.
+    :raises:
+        ValueError: If 'window_size' > ts_size.
+        ValueError: If 'num_compare_segments' > num_segments.
+    """
+
     paa = PAA(window_size=window_size)
     df_paa = paa.transform(df_norm)
 
     df_sax = sax_variant.transform(df_paa=df_paa, df_norm=df_norm, window_size=window_size)
+    # eSAX and aSAX additionally return data for inverse transformation
+    # extract only symbolic transformation
     if type(df_sax) is tuple:
         df_sax = df_sax[0]
     df_sax_linearized = linearize_sax_word(df_sax, sax_variant.symbols_per_segment)
-    # TODO: adjust _map_symbols function
-    df_sax_linearized = _map_symbols_to_numbers_2(df_sax_linearized, sax_variant)
+    df_sax_linearized_encoded = _encode_symbols([[df_sax_linearized]], sax_variant)[0][0]
 
-    # split if there are multiple symbols per segment
-    # one list element for each symbol position
-    splitted = []
-    for col_name, sax_repr in df_sax.items():
-        sax_repr = sax_repr.to_frame()
-        splitted.append([sax_repr.applymap(lambda symbols: symbols[i]) for i in range(sax_variant.symbols_per_segment)])
-    mapped = _map_symbols_to_numbers(splitted, sax_variant)
+    # split SAX word based on number of symbols per segment
+    # for each time series, one dataframe per number of symbols per segment
+    symbol_split = []
+    for col_name, col_sax_word in df_sax.items():
+        col_sax_word = col_sax_word.to_frame()
+        symbol_split.append([col_sax_word.applymap(lambda symbols: symbols[i])
+                             for i in range(sax_variant.symbols_per_segment)])
+    symbol_split_encoded = _encode_symbols(symbol_split, sax_variant)
 
-    # start and end for symbolic representation, respectively its encoded representation
-    start, end = constant_segmentation_overlapping(df_sax.shape[0], len_symbolic_subsequence, gap)
+    num_segments = df_sax.shape[0]
+    # indexes for extraction of encoded subsequences
+    start, end = constant_segmentation_overlapping(num_segments, num_compare_segments, gap)
     motifs_lst = []
-    for idx, ts_mapped in enumerate(mapped):
-        # find pairs of two very good matches, compute neareast neighbor
-        # dikt already merged
-        dikt_mp = _compute_matrix_profile_dikt(ts_mapped, len_symbolic_subsequence, max_distance=max_distance)
-        current_distance_idxs = list(dikt_mp.keys())
+    for idx, sax_word_split_encoded in enumerate(symbol_split_encoded):
+        # find nearest neighbor for each extracted subsequence per number of
+        # symbols per segment along with the corresponding distance
+        # nearest neighbors are declared as potential motifs
+        possible_motifs = _compute_possible_motifs(sax_word_split_encoded,
+                                                   num_compare_segments,
+                                                   float(max_distance), normalize, float(p))
+        possible_motifs_idxs = list(possible_motifs.keys())
         ts_motifs = []
-        removed = set()
-        # linearized version of SAX representation for whole words extraction of current time series
-        ts_sax_linearized = df_sax_linearized.iloc[:, idx]
-        for idxs in current_distance_idxs:
+        # indexes that are already assigned to a motif
+        assigned = set()
+        sax_word_linearized_encoded = df_sax_linearized_encoded.iloc[:, idx]
+        for idxs in possible_motifs_idxs:
             # motifs are disjoint
-            # current index is already contained in a motif
-            # i.e. it is within max_distance of a previous index (i.e. the subsequence corresponding to it)
-            if idxs[0] in removed or idxs[1] in removed:
+            # current subsequence already within 'max_distance' of a previously
+            # encountered subsequence
+            if idxs[0] in assigned or idxs[1] in assigned:
                 continue
 
-            # start and end indexes for whole words, not splitted words
+            # indexes for extraction of linearized encoded subsequences
             start_linearized = start * sax_variant.symbols_per_segment
             end_linearized = end * sax_variant.symbols_per_segment
-            # extract whole word queries, not splitted
-            query_fst_linearized = ts_sax_linearized.iloc[start_linearized[idxs[0]]:end_linearized[idxs[0]]].reset_index(drop=True)
-            query_snd_linearized = ts_sax_linearized.iloc[start_linearized[idxs[1]]:end_linearized[idxs[1]]].reset_index(drop=True)
-            # check if two whole words build a motif (i.e. are within 'max_distance')
-            dist_queries = distance.minkowski(query_fst_linearized, query_snd_linearized, p=1.0)
-            # queries are not within 'max_distance' of each other
-            # otherwise they form a motif
+            fst_query_linearized_encoded = sax_word_linearized_encoded.iloc[
+                                           start_linearized[idxs[0]]:end_linearized[idxs[0]]
+                                           ].reset_index(drop=True)
+            snd_query_linearized_encoded = sax_word_linearized_encoded.iloc[
+                                           start_linearized[idxs[1]]:end_linearized[idxs[1]]
+                                           ].reset_index(drop=True)
+            dist_queries = distance.minkowski(fst_query_linearized_encoded,
+                                              snd_query_linearized_encoded, p=float(p))
+            # check if the two potential motif queries are within
+            # 'max_distance' of each other, and therefore form a motif
             if dist_queries > max_distance:
                 continue
 
-            # find all subsequences that are within 'max_distance' of at least one of the queries
-            motif = _match(ts_mapped, idxs, start, end, max_distance, ts_sax_linearized, query_fst_linearized, query_snd_linearized, start_linearized, end_linearized)
-            # motif contains indexes wrt to start of symbolic subsequence
+            # find all subsequences (respectively their indexes) that are
+            # within 'max_distance' of at least one of the two queries
+            # these subsequences belong to the motif of the two queries
+            motif = _build_motif(sax_word_split_encoded, idxs, start, end,
+                                 float(max_distance), sax_word_linearized_encoded,
+                                 fst_query_linearized_encoded,
+                                 snd_query_linearized_encoded,
+                                 start_linearized, end_linearized, normalize, float(p))
             if motif:
                 motif.sort()
                 ts_motifs.append(motif)
-                removed.update(motif)
+                assigned.update(motif)
 
-        # motifs for each given time series
         motifs_lst.append(ts_motifs)
 
     # adjust start and end for indexes in original time series

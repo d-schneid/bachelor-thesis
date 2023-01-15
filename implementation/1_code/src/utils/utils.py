@@ -83,6 +83,11 @@ def constant_segmentation_overlapping(ts_size, len_subsequence, gap=1):
             original time series.
     """
 
+    if not len_subsequence <= ts_size:
+        raise ValueError("'len_subsequence' must be lower than or equal to "
+                         "'ts_size' ({0} > {1})."
+                         "".format(len_subsequence, ts_size))
+
     start = np.arange(0, ts_size - len_subsequence + 1, gap)
     end = np.arange(len_subsequence, ts_size + 1, gap)
     return start, end
