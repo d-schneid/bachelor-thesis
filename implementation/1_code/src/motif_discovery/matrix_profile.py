@@ -3,9 +3,27 @@ import numpy as np
 from scipy.spatial import distance
 
 from approximation.paa import PAA
-from utils.utils import constant_segmentation_overlapping, constant_segmentation
+from utils.utils import constant_segmentation_overlapping
 from discretization.sax.abstract_sax import linearize_sax_word
 from discretization.sax.one_d_sax import OneDSAX
+
+
+"""
+The functions below constitute an algorithm for motif discovery in time series
+that is based on the Matrix Profile. The Matrix Profile is applied on the
+symbolic representations of time series based on the respective SAX variant
+that is used. Since the Matrix Profile requires numerical values, the symbols
+of these representations are encoded into numbers.
+Moreover, the idea of finding similar subsequences in a bounded area around
+two selected and promising subsequences from reference [1] is used to discover
+motifs.
+
+References
+----------
+[1] Chiu, Bill, Eamonn Keogh, and Stefano Lonardi. "Probabilistic discovery of
+time series motifs." Proceedings of the ninth ACM SIGKDD international
+conference on Knowledge discovery and data mining. 2003. (expanded version)
+"""
 
 
 def _encode_symbols(symbol_split, sax_variant):

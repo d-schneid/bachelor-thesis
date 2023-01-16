@@ -303,7 +303,46 @@ def _filter_mindist(df_sax_ts, alphabet_size, promising_motifs, idxs, len_subseq
     return promising_motifs_mindist
 
 
-def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_sax_lst, sax_variant, len_subsequence):
+def _remove_trivial(motif, exclusion_zone):
+    """
+    Remove trivial matches in given motif.
+
+    :param motif: list
+        Contains indexes corresponding to subsequences that form a motif.
+    :param exclusion_zone: int
+        The number of indexes on the left and right side of an index in the
+        given motif that shall be excluded from motif discovery.
+    :return:
+        cleaned_motif: list
+            The given motif with trivial mathces removed.
+        trivial:
+            The indexes that are in the exclusion zones of the indexes in
+            'cleaned_motif'.
+    """
+
+    cleaned_motif = []
+    trivial = []
+    current_trivial = []
+    for idx in motif:
+        if idx not in current_trivial:
+            cleaned_motif.append(idx)
+            # exclusion zone around subsequence in motif
+            current_trivial = [idx + i for i in range(1, exclusion_zone + 1)] +\
+                              [idx - i for i in range(1, exclusion_zone + 1)]
+            trivial.extend(current_trivial)
+
+    # given motif contains only trivials that were removed
+    if len(cleaned_motif) == 1:
+        cleaned_motif = []
+        # if there is no motif, there are no trivials
+        trivial = []
+
+    return cleaned_motif, trivial
+
+
+def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end,
+                df_sax_lst, sax_variant, len_subsequence, ignore_trivial,
+                exclusion_zone):
     """
     Compute motifs based on the number of collisions between two symbolic
     representations corresponding to two subsequences.
@@ -354,6 +393,12 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
         their 'MINDIST'.
     :param len_subsequence: int
         The length of the extracted subsequences from the original time series.
+    :param ignore_trivial: bool
+        If True: Trivial subsequence matches around 'exclusion_zone' (on the
+        left and right side) are ignored for motif discovery.
+    :param exclusion_zone: int
+        The number of indexes on the left and right side of a match that shall
+        be excluded from motif discovery.
     :return:
         motifs_lst: list of len(motifs_lst) = num_ts
             Contains a two-dimensional list for each time series.
@@ -379,13 +424,14 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
     for i in range(num_ts):
         current_collisions_idxs = list(promising_collisions_lst[i].keys())
         ts_motifs = []
-        # indexes that are already assigned to a motif
-        assigned = set()
+        # indexes that are already assigned to a motif or declared as trivial
+        excluded = set()
         for idxs in current_collisions_idxs:
             # motifs are disjoint
             # at least one of the two current subsequences already within
             # 'radius' of a previously encountered subsequence
-            if idxs[0] in assigned or idxs[1] in assigned:
+            # or declared as trivial
+            if idxs[0] in excluded or idxs[1] in excluded:
                 continue
 
             # indexes are pointers into 'start' and 'end' for the starting and
@@ -414,23 +460,31 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_
                 # promising motifs need to be similar to both of the two
                 # current matching subsequences (i.e. high count for both)
                 promising_motifs = list(set(fst_promising_motifs).intersection(snd_promising_motifs))
+                promising_motifs = [idx for idx in promising_motifs if idx not in excluded]
                 # lower bounding property of 'MINDIST' compared to Euclidean
                 # distance is not fulfilled for 1d-SAX
                 if not isinstance(sax_variant, OneDSAX):
                     promising_motifs = _filter_mindist(df_sax_lst[i], sax_variant.alphabet_size, promising_motifs, idxs, len_subsequence, radius)
                 motifs = _filter_eucl_dist(df_norm.iloc[:, i], start, end, promising_motifs, fst_matching_subsequence, snd_matching_subsequence, radius)
                 motif.extend(motifs)
+                motif.sort()
+                if ignore_trivial:
+                    motif, trivial = _remove_trivial(motif, exclusion_zone)
+                    # exclude subsequences in exclusion zones of subsequences
+                    # in motif from motif discovery
+                    excluded.update(trivial)
                 if motif:
-                    motif.sort()
                     ts_motifs.append(motif)
-                    assigned.update(motif)
+                    excluded.update(motif)
 
         motifs_lst.append(ts_motifs)
 
     return motifs_lst
 
 
-def do_random_projection(df_norm, len_subsequence, window_size, sax_variant, num_projections, mask_size, radius, min_collisions, gap=1, seed=1):
+def do_random_projection(df_norm, len_subsequence, window_size, sax_variant,
+                         num_projections, mask_size, radius, min_collisions,
+                         ignore_trivial=True, exclusion_zone=None, gap=1, seed=1):
     """
     Execute the random projection algorithm for motif discovery in a time
     series based on its subsequences and their symbolic representations.
@@ -461,6 +515,14 @@ def do_random_projection(df_norm, len_subsequence, window_size, sax_variant, num
         The minimum number of collisions between two subsequences based on
         their respective projected symbolic representations such that they are
         considered potential motifs that will be considered for finding motifs.
+    :param ignore_trivial: bool (default = True)
+        If True: Trivial subsequence matches around 'exclusion_zone' (on the
+        left and right side) are ignored for motif discovery.
+    :param exclusion_zone: int (default = None)
+        The number of indexes on the left and right side of a match that shall
+        be excluded from motif discovery.
+        If None, then it will be set to round('window_size' / 2).
+        If 'ignore_trivial' is set to False, 'exclusion_zone' will be ignored.
     :param gap: int (default = 1)
         The gap between two consecutive subsequences within the corresponding
         time series when extracting them.
@@ -515,9 +577,17 @@ def do_random_projection(df_norm, len_subsequence, window_size, sax_variant, num
                          "number of comparisons between these two symbolic "
                          "representations in a lower-dimensional space.")
 
-    df_sax_lst, start, end = _get_sax_subsequences(df_norm, len_subsequence, window_size, sax_variant, gap)
-    collisions_lst = _compute_collisions(df_sax_lst, sax_variant, num_projections, mask_size, seed)
-    motifs_lst = _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end, df_sax_lst, sax_variant, len_subsequence)
+    if not exclusion_zone:
+        exclusion_zone = round(window_size / 2)
+
+    df_sax_lst, start, end = _get_sax_subsequences(df_norm, len_subsequence,
+                                                   window_size, sax_variant, gap)
+    collisions_lst = _compute_collisions(df_sax_lst, sax_variant,
+                                         num_projections, mask_size, seed)
+    motifs_lst = _get_motifs(df_norm, collisions_lst, radius, min_collisions,
+                             start, end, df_sax_lst, sax_variant,
+                             len_subsequence, ignore_trivial, exclusion_zone)
+
     return motifs_lst, start, end
 
 
@@ -554,7 +624,7 @@ def get_motifs_per_subsequence(motifs_lst):
     return motifs_per_subsequence_lst
 
 
-def remove_trivial_motifs(motifs_per_subsequence_lst):
+def remove_trivial_motifs_per_subsequence(motifs_per_subsequence_lst):
     """
     Remove trivial motifs for each subsequence.
     Given a subsequence 'S' with index 'a'. A trivial motif of 'S' is a motif
