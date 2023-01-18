@@ -2,10 +2,8 @@ import stumpy
 import numpy as np
 from scipy.spatial import distance
 
-from approximation.paa import PAA
 from utils.utils import constant_segmentation_overlapping
-from discretization.sax.abstract_sax import linearize_sax_word
-from discretization.sax.one_d_sax import OneDSAX
+from motif_discovery.utils import _get_linearized_encoded_sax, _encode_symbols
 
 
 """
@@ -24,39 +22,6 @@ References
 time series motifs." Proceedings of the ninth ACM SIGKDD international
 conference on Knowledge discovery and data mining. 2003. (expanded version)
 """
-
-
-def _encode_symbols(symbol_split, sax_variant):
-    """
-    Encode SAX symbols to numbers. Symbol 'a' is assigned 0, symbol 'b' is
-    assigned 1 and so on.
-
-    :param symbol_split: list of len(symbol_split) = num_ts
-        Contains lists of the SAX representations for each time series,
-        but split according to the number of symbols per segment for the given
-        'sax_variant'. Hence, each sub-list contains one dataframe for each
-        number of symbols per segment.
-    :param sax_variant: AbstractSAX
-        The SAX variant that was used to create the given SAX representations.
-    :return:
-        list of len(symbol_split_encoded) = num_ts
-            Has the same structure as the given list 'symbol_split', but with
-            encoded symbols.
-    """
-
-    mapping = dict(zip(sax_variant.alphabet,
-                       [num for num in range(sax_variant.alphabet_size)]))
-    if isinstance(sax_variant, OneDSAX):
-        if sax_variant.alphabet_size_slope > sax_variant.alphabet_size:
-            mapping = dict(zip(sax_variant.alphabet_slope,
-                               [num for num in range(sax_variant.alphabet_size_slope)]))
-
-    symbol_split_encoded = []
-    for sax_word_split in symbol_split:
-        symbol_split_encoded.append([sax_symbol_split.replace(to_replace=mapping)
-                                     for sax_symbol_split in sax_word_split])
-
-    return symbol_split_encoded
 
 
 def _compute_possible_motifs(sax_word_split_encoded, num_compare_segments,
@@ -312,16 +277,7 @@ def do_matrix_profile(df_norm, window_size, sax_variant, num_compare_segments,
         ValueError: If 'num_compare_segments' > num_segments.
     """
 
-    paa = PAA(window_size=window_size)
-    df_paa = paa.transform(df_norm)
-
-    df_sax = sax_variant.transform(df_paa=df_paa, df_norm=df_norm, window_size=window_size)
-    # eSAX and aSAX additionally return data for inverse transformation
-    # extract only symbolic transformation
-    if type(df_sax) is tuple:
-        df_sax = df_sax[0]
-    df_sax_linearized = linearize_sax_word(df_sax, sax_variant.symbols_per_segment)
-    df_sax_linearized_encoded = _encode_symbols([[df_sax_linearized]], sax_variant)[0][0]
+    df_sax_linearized_encoded, df_sax = _get_linearized_encoded_sax(df_norm, window_size, sax_variant)
 
     # split SAX word based on number of symbols per segment
     # for each time series, one dataframe per number of symbols per segment
