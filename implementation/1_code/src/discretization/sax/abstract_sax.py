@@ -121,3 +121,40 @@ class AbstractSAX(ABC):
         """
 
         pass
+
+    @abstractmethod
+    def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
+        """
+        Transform the PAA representation of each time series into its symbolic
+        representation and inverse transform these symbolic representations.
+
+        :param df_paa: dataframe of shape (num_segments, num_ts)
+            The PAA representations of a time series dataset that shall be
+            transformed into their symbolic representations.
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The time series dataset that was used to create the given PAA
+            representations
+        :param window_size: int
+            The size of the window that was used to create the given PAA
+            representations.
+        :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts) (default = None)
+            Can only be used for the aSAX. Ignored for other SAX variants.
+            The individual breakpoints for the given PAA representations that
+            shall be used to transform them into their symbolic
+            representations.
+            If None, the respective breakpoints resulting from the k-means
+            clustering of the respective PAA points are used.
+            This parameter is intended to allow breakpoints based on the
+            k-means clustering of the original normalized time series data
+            points.
+        :param symbol_mapping: multiple objects of SymbolMapping
+            The symbol mapping strategies that shall be used to inverse
+            transform the symbolic representations of the given PAA
+            representations.
+            The appropriate symbol mapping strategies depend on the used SAX
+            variant.
+        :return:
+            dataframe of shape (ts_size, num_ts)
+        """
+
+        pass

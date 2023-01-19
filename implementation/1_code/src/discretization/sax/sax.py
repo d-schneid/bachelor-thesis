@@ -65,13 +65,27 @@ class SAX(AbstractSAX):
         :param symbol_mapping: SymbolMapping
             The symbol mapping strategy that determines the symbol values for
             the SAX symbols.
+        :param args: int
+            Is only used for the inverse transformation with a 'ValuePoints'
+            symbol mapping strategy of the aSAX that calls this method by means
+            of inheritance. It contains the column index of the current time
+            series in the respective dataframe. This is needed, because the
+            symbol mapping for the aSAX is computed one-by-one time series.
+            Therefore, the aSAX representation of a time series needs to be
+            matched with its original time series that is stored in the time
+            series dataset of the chosen 'ValuePoints' symbol mapping strategy.
         :return:
             dataframe of shape (ts_size, num_ts)
         """
 
-        df_mapped = symbol_mapping.get_mapped(df_sax, self.alphabet, self.breakpoints)
+        df_mapped = symbol_mapping.get_mapped(df_sax, self.alphabet, self.breakpoints, *args)
         df_inv_sax = interpolate_segments(df_mapped, ts_size, window_size)
         return df_inv_sax
+
+    def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
+        ts_size = df_norm.shape[0]
+        df_sax = self.transform(df_paa)
+        return self.inv_transform(df_sax, ts_size, window_size, **symbol_mapping)
 
     def _distance(self, df_alphabet_idx, ts_size, sax_idx):
         """

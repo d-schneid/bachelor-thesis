@@ -13,7 +13,7 @@ class SymbolMapping(ABC):
     """
 
     @abstractmethod
-    def get_mapped(self, df_sax, alphabet, breakpoints):
+    def get_mapped(self, df_sax, alphabet, breakpoints, *args):
         """
         Map the given SAX symbols to symbol values.
 
@@ -23,6 +23,15 @@ class SymbolMapping(ABC):
             The alphabet that was used for the given SAX representations.
         :param breakpoints: array
             The breakpoints that were used for the given SAX representations.
+        :param args: int
+            Is only used for the inverse transformation with a 'ValuePoints'
+            symbol mapping strategy of the aSAX. It contains the column index
+            of the current time series in the respective dataframe. This is
+            needed, because the symbol mapping for the aSAX is computed
+            one-by-one time series. Therefore, the aSAX representation of a
+            time series needs to be matched with its original time series that
+            is stored in the time series dataset of the chosen 'ValuePoints'
+            symbol mapping strategy.
         :return:
             dataframe of shape (num_segments, num_ts)
         """
@@ -63,7 +72,7 @@ class IntervalNormMedian(SymbolMapping):
         # interval for Gaussian distribution in ascending order
         self.interval_medians = norm.ppf(median_quantiles, scale=self.var)
 
-    def get_mapped(self, df_sax, alphabet, breakpoints=None):
+    def get_mapped(self, df_sax, alphabet, breakpoints=None, *args):
         mapping = dict(zip(alphabet, self.interval_medians))
         df_mapped = df_sax.replace(to_replace=mapping)
         return df_mapped
@@ -94,7 +103,7 @@ class IntervalMean(SymbolMapping):
         self.lower_bound = lower_bound
         self.upper_bound = -lower_bound if upper_bound is None else upper_bound
 
-    def get_mapped(self, df_sax, alphabet, breakpoints):
+    def get_mapped(self, df_sax, alphabet, breakpoints, *args):
         if self.lower_bound > breakpoints[0]:
             raise ValueError("The lower bound cannot be above the lowest "
                              "breakpoint.")
@@ -137,21 +146,55 @@ class ValuePoints(SymbolMapping):
         super().__init__()
         self.df_norm = df_norm
 
-    def get_mapped(self, df_sax, alphabet, breakpoints):
-        mapped = []
-        idx = 0
-        # iteratively for each time series, because different means in
-        # breakpoint intervals for each
-        for col_name, col_data in self.df_norm.items():
-            # assign respective alphabet index to each point in time series
-            alphabet_idx = np.searchsorted(breakpoints, col_data, side="right")
-            symbol_values = self.get_symbol_values(col_data.groupby(by=alphabet_idx))
+    def _get_mapping(self, col_data, alphabet, breakpoints):
+        """
+        Compute the respective symbol value for each symbol in the given
+        alphabet.
 
-            mapping = {}
-            for alphabet_idx, symbol_value in symbol_values.items():
-                mapping.update({alphabet[alphabet_idx]: symbol_value})
-            mapped.append(df_sax.iloc[:, idx].replace(to_replace=mapping))
-            idx += 1
+        :param col_data: pd.Series of shape (ts_size,)
+            The time series whose points shall be used to compute the mean or
+            median within each breakpoint interval.
+        :param alphabet: np.array of shape (alphabet_size,)
+            The symbols that shall be mapped onto symbol values.
+        :param breakpoints: np.array of shape (alphabet_size - 1,)
+            The breakpoint intervals in which the mean or median of the
+            respective time series points shall be computed.
+        :return: dict of len(mapping) = alphabet_size
+            The keys are the symbols of the given alphabet and the values are
+            the corresponding symbol values.
+        """
+
+        # assign respective alphabet index to each point in time series
+        alphabet_idx = np.searchsorted(breakpoints, col_data, side="right")
+        symbol_values = self.get_symbol_values(col_data.groupby(by=alphabet_idx))
+
+        if len(symbol_values) < len(alphabet):
+            raise AssertionError("There is a breakpoint interval that "
+                                 "does not contain any time series point. "
+                                 "Adapt to use less intervals.")
+
+        mapping = {}
+        for alphabet_idx, symbol_value in symbol_values.items():
+            mapping.update({alphabet[alphabet_idx]: symbol_value})
+
+        return mapping
+
+    def get_mapped(self, df_sax, alphabet, breakpoints, col_idx=None):
+        mapped = []
+        # used for the aSAX where the symbol mapping is computed one-by-one
+        # time series due to individual breakpoints for each time series
+        if col_idx is not None:
+            col_data = self.df_norm.iloc[:, col_idx]
+            mapping = self._get_mapping(col_data, alphabet, breakpoints)
+            mapped.append(df_sax.iloc[:, 0].replace(to_replace=mapping))
+        else:
+            idx = 0
+            # iteratively for each time series, because different means and
+            # medians in breakpoint intervals for each
+            for col_name, col_data in self.df_norm.items():
+                mapping = self._get_mapping(col_data, alphabet, breakpoints)
+                mapped.append(df_sax.iloc[:, idx].replace(to_replace=mapping))
+                idx += 1
 
         return pd.concat(mapped, axis=1)
 

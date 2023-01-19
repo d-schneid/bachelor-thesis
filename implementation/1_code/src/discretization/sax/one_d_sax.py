@@ -14,7 +14,7 @@ from discretization.sax.abstract_sax import (AbstractSAX,
 NUMERATOR_VAR_SLOPE = 0.03
 
 
-def compute_slopes(df_norm, df_paa, window_size):
+def compute_slopes(df_norm, window_size):
     """
     Compute the slope of the linear function fit by linear regression for each
     segment in each time series.
@@ -23,8 +23,6 @@ def compute_slopes(df_norm, df_paa, window_size):
     :param df_norm: dataframe of shape (ts_size, num_ts)
         The normalized time series dataset that shall be transformed into its
         1d-SAX representations.
-    :param df_paa: dataframe of shape (num_segments, num_ts)
-        The PAA representations of the given normalized time series dataset.
     :param window_size: int
         The size of the segments with which the given PAA representations were
         created.
@@ -57,8 +55,9 @@ def compute_slopes(df_norm, df_paa, window_size):
         sums_denumerator.append(segment_sum_denumerator)
 
     slopes_numerator = pd.DataFrame(data=np.array(sums_numerator),
-                                    index=df_paa.index,
-                                    columns=df_paa.columns)
+                                    index=range(num_segments),
+                                    columns=df_norm.columns)
+
     slopes_denumerator = pd.Series(data=sums_denumerator)
     slopes = slopes_numerator.divide(slopes_denumerator, axis=0)
     return slopes
@@ -106,8 +105,10 @@ class OneDSAX(AbstractSAX):
         self.symbols_per_segment = 2
         # breakpoints for slope values of the segments are determined during
         # 1d-SAX transformation, when 'window_size' is known
+        # can also be set with the method 'set_breakpoints_slope'
+        self.breakpoints_slope = None
 
-    def _set_breakpoints_slope(self, window_size):
+    def set_breakpoints_slope(self, window_size):
         """
         Set the breakpoints for quantizing the slope values of the segments
         based on a Gaussian distribution whose variance is a decreasing
@@ -118,6 +119,7 @@ class OneDSAX(AbstractSAX):
             representations were created.
         :return: None
         """
+
         if self.var_slope is None:
             self.var_slope = np.sqrt(NUMERATOR_VAR_SLOPE / window_size)
         self.breakpoints_slope = breakpoints(self.alphabet_size_slope,
@@ -146,8 +148,8 @@ class OneDSAX(AbstractSAX):
 
         df_avg = SAX(self.alphabet_size_avg).transform(df_paa)
 
-        slope_values = compute_slopes(df_norm, df_paa, window_size)
-        self._set_breakpoints_slope(window_size)
+        slope_values = compute_slopes(df_norm, window_size)
+        self.set_breakpoints_slope(window_size)
         # index i satisfies: breakpoints_slope[i-1] <= slope_value < breakpoints_slope[i]
         alphabet_slope_idx = np.searchsorted(self.breakpoints_slope, slope_values, side="right")
         df_slope = pd.DataFrame(data=self.alphabet_slope[alphabet_slope_idx],
@@ -226,3 +228,7 @@ class OneDSAX(AbstractSAX):
 
         df_inv = df_avg + df_slope_time_diff
         return df_inv
+
+    def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
+        df_one_d_sax = self.transform(df_paa, df_norm, window_size)
+        return self.inv_transform(df_norm, df_one_d_sax, window_size, **symbol_mapping)

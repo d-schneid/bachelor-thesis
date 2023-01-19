@@ -242,3 +242,9 @@ class ExtendedSAX(AbstractSAX):
             df_inv_e_sax.iloc[list(mapping_min[i].keys()), i] = mapping_min[i]
 
         return df_inv_e_sax
+
+    def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
+        ts_size = df_norm.shape[0]
+        df_e_sax, df_sax_mean, df_sax_max, df_sax_min = self.transform(df_paa, df_norm, window_size)
+        return self.inv_transform(df_sax_mean, df_sax_max, df_sax_min, ts_size,
+                                  window_size, **symbol_mapping)

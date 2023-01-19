@@ -444,14 +444,20 @@ class AdaptiveSAX(SAX):
         # normal distribution) if no breakpoints are given
         self.breakpoints = self.init_breakpoints
         inv_a_sax_reprs = []
-        for i in range(df_a_sax.shape[1]):
+        for idx in range(df_a_sax.shape[1]):
             if df_breakpoints is not None:
-                self.breakpoints = np.array(df_breakpoints.iloc[:, i])
+                self.breakpoints = np.array(df_breakpoints.iloc[:, idx])
             # inverse transform time series by time series with the individual
             # breakpoints that were used for the transformation into the given
             # aSAX representation
-            df_inv_a_sax = super().inv_transform(df_a_sax.iloc[:, i].to_frame(),
+            df_inv_a_sax = super().inv_transform(df_a_sax.iloc[:, idx].to_frame(),
                                                  ts_size, window_size,
-                                                 symbol_mapping, *args, **kwargs)
+                                                 symbol_mapping, idx)
             inv_a_sax_reprs.append(df_inv_a_sax)
         return pd.concat(inv_a_sax_reprs, axis=1)
+
+    def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
+        ts_size = df_norm.shape[0]
+        df_a_sax, df_breakpoints = self.transform(df_paa, df_breakpoints)
+        return self.inv_transform(df_a_sax, ts_size, window_size,
+                                  **symbol_mapping, df_breakpoints=df_breakpoints)
