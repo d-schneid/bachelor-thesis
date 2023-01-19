@@ -2,7 +2,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from utils.utils import constant_segmentation, interpolate_segments
+from utils import constant_segmentation, interpolate_segments
 from discretization.sax.symbol_mapping import ValuePoints, IntervalNormMedian
 from discretization.sax.sax import SAX
 from discretization.sax.abstract_sax import (AbstractSAX,

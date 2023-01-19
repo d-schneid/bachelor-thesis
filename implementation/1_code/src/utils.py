@@ -5,10 +5,6 @@ from pathlib import Path
 from scipy.stats import zscore
 
 
-# so that all data paths can be given relative to the directory "0_data"
-DATA_DIR = "../../0_data"
-
-
 def constant_segmentation(ts_size, window_size):
     """
     Compute the segment boundaries for PAA.
@@ -121,7 +117,7 @@ def load_parquet_to_df_list(path):
                 "or its metadata contain NaN or the respective time series " \
                 "together with its metadata do not have the same length."
 
-    path = Path(os.path.join(DATA_DIR, path))
+    path = Path(path)
 
     if os.path.isdir(path):
         df_list = []

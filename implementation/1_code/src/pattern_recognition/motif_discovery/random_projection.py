@@ -6,9 +6,9 @@ from approximation.paa import PAA
 from discretization.sax.sax import SAX
 from discretization.sax.one_d_sax import OneDSAX
 from discretization.sax.abstract_sax import AbstractSAX
-from utils.utils import constant_segmentation_overlapping, constant_segmentation
+from utils import constant_segmentation_overlapping, constant_segmentation
 from discretization.sax.abstract_sax import linearize_sax_word
-from motif_discovery.utils import _remove_trivial
+from pattern_recognition.motif_discovery.utils import _remove_trivial
 
 
 """

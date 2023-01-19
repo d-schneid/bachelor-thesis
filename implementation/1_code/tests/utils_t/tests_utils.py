@@ -1,6 +1,6 @@
 import unittest
 
-from utils.utils import constant_segmentation
+from utils import constant_segmentation
 
 
 class TestConstantSegmentation(unittest.TestCase):

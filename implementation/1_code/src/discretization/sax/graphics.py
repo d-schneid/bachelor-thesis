@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from statsmodels.api import qqplot
 
-from utils.utils import constant_segmentation, interpolate_segments
+from utils import constant_segmentation, interpolate_segments
 
 
 def plot_norm_qq(df_orig, df_norm, num_column, scale=1):

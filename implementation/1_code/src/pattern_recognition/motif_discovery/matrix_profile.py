@@ -2,8 +2,9 @@ import stumpy
 import numpy as np
 from scipy.spatial import distance
 
-from utils.utils import constant_segmentation_overlapping
-from motif_discovery.utils import _get_linearized_encoded_sax, _encode_symbols
+from utils import constant_segmentation_overlapping
+from pattern_recognition.motif_discovery.utils import _encode_symbols
+from pattern_recognition.utils import _get_linearized_encoded_sax
 
 
 """

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from discretization.sax.abstract_sax import AbstractSAX
-from utils.utils import interpolate_segments
+from utils import interpolate_segments
 
 
 class SAX(AbstractSAX):

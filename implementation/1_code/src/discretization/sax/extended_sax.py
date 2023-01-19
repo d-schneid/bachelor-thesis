@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 from discretization.sax.abstract_sax import AbstractSAX
-from utils.utils import constant_segmentation, interpolate_segments
+from utils import constant_segmentation, interpolate_segments
 
 
 def _compute_segment_min_idx(segment):
