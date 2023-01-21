@@ -71,23 +71,37 @@ class TimeSeriesClassifierMixin:
         # transpose to align with sklearn
         return super().fit(df_norm.T, class_labels)
 
-    def score(self, df_norm, class_labels, sample_weight=None):
+    def eval(self, df_norm, class_labels, eval_metrics_lst, average="macro"):
         """
-        Compute the mean accuracy on the given time series and corresponding
-        class labels.
+        Compute evaluation scores of the fitted classifier based on the true
+        class labels (ground truth).
 
         :param df_norm: dataframe of shape (ts_size, num_ts)
-            The original normalized time series dataset that shall be evaluated
-            with the respective fitted classifier.
+            The time series dataset whose classes shall be predicted for each
+            time seris by the fitted classifier.
         :param class_labels: pd.Series of shape (num_ts,)
-            The class labels for the given time series.
-        :param sample_weight: pd.Series of shape (num_ts,)
-            Weights for the given time series.
-        :return: float
+            The true class labels (ground truth) of the given time series.
+        :param eval_metrics_lst: list with elements of type ClassificationMetric
+            Contains the classification evaluation metrics that shall be
+            computed.
+        :param average: {'micro', 'macro', 'samples', 'weighted', 'binary'} (default = 'macro')
+            The type of averaging performed on the data by the respective
+            classification metric.
+            See documentation of classification metrics in 'sklearn' for
+            further details.
+        :return: dict
+            Keys are the abbreviated names of the given classification
+            evaluation metrics. Values are the corresponding scores of the
+            classification evaluation metrics.
         """
 
         # transpose to align with sklearn
-        return super().score(df_norm.T, class_labels, sample_weight)
+        predicted_labels = self.predict(df_norm.T)
+        scores = {}
+        for metric in eval_metrics_lst:
+            score = metric.compute(class_labels, predicted_labels, average=average)
+            scores[metric.abbreviation] = score
+        return scores
 
 
 class KNeighborsTimeSeriesClassifier(TimeSeriesClassifierMixin, KNeighborsClassifier):

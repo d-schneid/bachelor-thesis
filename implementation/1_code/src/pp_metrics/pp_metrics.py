@@ -10,7 +10,7 @@ from sktime.performance_metrics.forecasting import (
 
 # the name of the module that shall be imported by the factory method
 # 'get_metric_instance' located in 'utils'
-MODULE_NAME = "metrics.pp_metrics"
+PP_METRICS_MODULE = "pp_metrics.pp_metrics"
 
 
 class PPMetric(ABC):

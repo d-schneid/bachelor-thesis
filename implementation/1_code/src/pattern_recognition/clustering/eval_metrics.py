@@ -19,7 +19,7 @@ References
 
 # the name of the module that shall be imported by the factory method
 # 'get_metric_instance' located in 'utils'
-MODULE_NAME = "pattern_recognition.clustering.eval_metrics"
+CLUSTERING_METRICS_MODULE = "pattern_recognition.clustering.eval_metrics"
 
 
 class ClusteringMetric(ABC):

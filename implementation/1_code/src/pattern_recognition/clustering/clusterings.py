@@ -111,7 +111,7 @@ class TimeSeriesClusteringMixin:
                 computed.
         :return: dict
             Keys are the abbreviated names of the given clustering evaluation
-            metrics. Values are the scores of the corresponding clustering
+            metrics. Values are the corresponding scores of the clustering
             evaluation metrics.
         :raises:
             ValueError: If internal clustering metrics are used.
@@ -141,7 +141,7 @@ class TimeSeriesClusteringMixin:
                 computed.
         :return: dict
             Keys are the abbreviated names of the given clustering evaluation
-            metrics. Values are the scores of the corresponding clustering
+            metrics. Values are the corresponding scores of the clustering
             evaluation metrics.
         :raises:
             ValueError: If ground truth clustering metrics are used.
