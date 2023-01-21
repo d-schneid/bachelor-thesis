@@ -1,4 +1,5 @@
 import os
+import inspect
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -184,3 +185,27 @@ def interpolate_segments(df_segments, ts_size, window_size):
         df_interpolate.iloc[-remainder:] = df_segments.iloc[-1]
 
     return df_interpolate
+
+
+def get_metric_instance(module_name, metric):
+    """
+    A factory method to create instances of subclasses that deal with metrics.
+
+    :param module_name: str
+        The name of the module that shall be imported.
+    :param metric: str
+        The name of the subclass that shall be instantiated.
+        Can be written in any way (lowercase, uppercase, ...), but all
+        lowercase is preferred to avoid any dependency errors.
+    :return:
+        instance of class 'metric'
+    """
+
+    module = __import__(module_name, fromlist=[metric])
+    module_members = inspect.getmembers(module)
+    # Find the member that has the same name as the given class (ignoring case)
+    Metric = next(member for name, member in module_members
+                  if name.lower() == metric.lower())
+
+    # instantiate found subclass of abstract class 'PPMetric'
+    return Metric()

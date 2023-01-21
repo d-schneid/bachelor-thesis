@@ -92,7 +92,7 @@ class TimeSeriesClassifierMixin:
 
 class KNeighborsTimeSeriesClassifier(TimeSeriesClassifierMixin, KNeighborsClassifier):
     """
-    A wrapper of the 'KNeighborsClassifier' from 'sklearn'.
+    A wrapper of the 'KNeighborsClassifier' of 'sklearn'.
     See 'sklearn' documentation for further details.
     """
 
@@ -106,12 +106,12 @@ class KNeighborsTimeSeriesClassifier(TimeSeriesClassifierMixin, KNeighborsClassi
 
 class MLPTimeSeriesClassifier(TimeSeriesClassifierMixin, MLPClassifier):
     """
-    A wrapper of the 'MLPClassifier' from 'sklearn'.
+    A wrapper of the 'MLPClassifier' of 'sklearn'.
     See 'sklearn' documentation for further details.
     """
 
-    def __init__(self, hidden_layer_sizes=(100,), activation='relu', solver='adam',
-                 batch_size='auto', learning_rate='constant', learning_rate_init=0.001,
+    def __init__(self, hidden_layer_sizes=(100,), activation="relu", solver="adam",
+                 batch_size="auto", learning_rate="constant", learning_rate_init=0.001,
                  power_t=0.5, max_iter=200, shuffle=True, random_state=None, momentum=0.9,
                  nesterovs_momentum=True, early_stopping=False, validation_fraction=0.1,
                  beta_1=0.9, beta_2=0.999, max_fun=15000):
@@ -127,11 +127,11 @@ class MLPTimeSeriesClassifier(TimeSeriesClassifierMixin, MLPClassifier):
 
 class DecisionTreeTimeSeriesClassifier(TimeSeriesClassifierMixin, DecisionTreeClassifier):
     """
-    A wrapper of the 'DecisionTreeClassifier' from 'sklearn'.
+    A wrapper of the 'DecisionTreeClassifier' of 'sklearn'.
     See 'sklearn' documentation for further details.
     """
 
-    def __init__(self, criterion='gini', splitter='best', max_depth=None,
+    def __init__(self, criterion="gini", splitter="best", max_depth=None,
                  min_samples_split=2, min_samples_leaf=1, min_weight_fraction_leaf=0.0,
                  max_features=None, random_state=None, max_leaf_nodes=None,
                  min_impurity_decrease=0.0, class_weight=None, ccp_alpha=0.0):

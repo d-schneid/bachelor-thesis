@@ -1,4 +1,3 @@
-import inspect
 import pandas as pd
 from abc import ABC, abstractmethod
 from sktime.performance_metrics.forecasting import (
@@ -10,32 +9,8 @@ from sktime.performance_metrics.forecasting import (
 
 
 # the name of the module that shall be imported by the factory method
-# 'get_pp_metric'
+# 'get_metric_instance' located in 'utils'
 MODULE_NAME = "metrics.pp_metrics"
-
-
-def get_pp_metric_instance(metric):
-    """
-    A factory method to create instances of subclasses of the abstract class
-    'PPMetric'.
-
-    :param metric: str
-        The name of the subclass of the abstract class 'PPMetric' that shall be
-        instantiated.
-        Can be written in any way (lowercase, uppercase, ...), but all
-        lowercase is preferred to avoid any dependency errors.
-    :return:
-        instance of class 'metric'
-    """
-
-    module = __import__(MODULE_NAME, fromlist=[metric])
-    module_members = inspect.getmembers(module)
-    # Find the member that has the same name as the given class (ignoring case)
-    Metric = next(member for name, member in module_members
-                  if name.lower() == metric.lower())
-
-    # instantiate found subclass of abstract class 'PPMetric'
-    return Metric()
 
 
 class PPMetric(ABC):
