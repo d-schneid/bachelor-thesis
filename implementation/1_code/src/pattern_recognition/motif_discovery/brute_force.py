@@ -2,7 +2,7 @@ from scipy.spatial import distance
 
 from utils import constant_segmentation_overlapping
 from pattern_recognition.motif_discovery.utils import _remove_trivial
-from pattern_recognition.utils import _get_linearized_encoded_sax
+from pattern_recognition.utils import get_linearized_encoded_sax
 
 
 """
@@ -218,7 +218,7 @@ def do_brute_force(df_norm, window_size, sax_variant, num_compare_segments,
             original time series.
     """
 
-    df_sax_linearized_encoded, df_sax = _get_linearized_encoded_sax(df_norm, window_size, sax_variant)
+    df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size, sax_variant)
 
     # use gap to account for multiple symbols per segment
     start, end = constant_segmentation_overlapping(df_sax_linearized_encoded.shape[0],

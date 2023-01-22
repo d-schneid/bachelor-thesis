@@ -1,14 +1,38 @@
 from sklearn.cluster import KMeans, Birch, AffinityPropagation
-
+from sklearn.metrics import rand_score
 from approximation.paa import PAA
+from pattern_recognition.utils import get_linearized_encoded_sax
 from pattern_recognition.clustering.eval_metrics import (
     GroundTruthClusteringMetric, InternalClusteringMetric)
 
 
 class TimeSeriesClusteringMixin:
 
-    def fit_discretized(self, df_norm, window_size, sax_variant,
-                        df_breakpoints=None, **symbol_mapping):
+    def fit_discretized_encoded(self, df_norm, window_size, sax_variant):
+        """
+        Compute the respective clustering from the discretized and encoded time
+        series dataset.
+
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The time series dataset that shall be discretized and encoded and
+            then clustered.
+        :param window_size: int
+            The size of the window that shall be used to transform the given
+            time series dataset into its PAA representation.
+        :param sax_variant: AbstractSAX
+            The SAX variant that shall be used to transform the PAA
+            representation of the given time series dataset into its symbolic
+            representation (discretized representation).
+        :return:
+            The respective fitted clustering estimator.
+        """
+
+        df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size, sax_variant)
+        # transpose to align with sklearn
+        return super().fit(df_sax_linearized_encoded.T)
+
+    def fit_inverse_transformed(self, df_norm, window_size, sax_variant,
+                                df_breakpoints=None, **symbol_mapping):
         """
         Compute the respective clustering from the inverse transformed time
         series dataset.
@@ -95,14 +119,11 @@ class TimeSeriesClusteringMixin:
         # transpose to align with sklearn
         return super().fit_predict(df_norm.T)
 
-    def ground_truth_eval(self, df_norm, cluster_labels, eval_metrics_lst):
+    def ground_truth_eval(self, cluster_labels, eval_metrics_lst):
         """
         Compute evaluation scores of the fitted clustering based on the ground
         truth clustering.
 
-        :param df_norm: dataframe of shape (ts_size, num_ts)
-            The original normalized time series dataset clusters shall be
-            evaluated.
         :param cluster_labels: pd.Series of shape (num_ts,)
             The cluster labels each given time series belongs to (ground truth).
         :param eval_metrics_lst:
@@ -117,14 +138,13 @@ class TimeSeriesClusteringMixin:
             ValueError: If internal clustering metrics are used.
         """
 
-        predicted_labels = self.predict(df_norm)
         scores = {}
         for metric in eval_metrics_lst:
             if isinstance(metric, InternalClusteringMetric):
                 raise ValueError(f"{metric.abbreviation} is an internal "
                                  f"clustering metric which is not allowed "
                                  f"for this kind of evaluation.")
-            score = metric.compute(cluster_labels, predicted_labels)
+            score = metric.compute(cluster_labels, self.labels_)
             scores[metric.abbreviation] = score
         return scores
 

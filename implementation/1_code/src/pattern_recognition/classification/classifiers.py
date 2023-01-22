@@ -3,12 +3,39 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.tree import DecisionTreeClassifier
 
 from approximation.paa import PAA
+from pattern_recognition.utils import get_linearized_encoded_sax
 
 
 class TimeSeriesClassifierMixin:
 
-    def fit_discretized(self, df_norm, class_labels, window_size, sax_variant,
-                        df_breakpoints=None, **symbol_mapping):
+    def fit_discretized_encoded(self, df_norm, class_labels, window_size, sax_variant):
+        """
+        Fit the respective classifier from the discretized and encoded time
+        series training dataset.
+
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The time series training dataset that shall be discretized and
+            encoded in order to fit the classifier from it.
+        :param class_labels: pd.Series of shape (num_ts,)
+            The class label of each time series from the given time series
+            training dataset.
+        :param window_size: int
+            The size of the window that shall be used to transform the given
+            time series training dataset into its PAA representation.
+        :param sax_variant: AbstractSAX
+            The SAX variant that shall be used to transform the PAA
+            representation of the given time series training dataset into its
+            symbolic representation (discretized representation).
+        :return:
+            The respective fitted classifier.
+        """
+
+        df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size, sax_variant)
+        # transpose to align with sklearn
+        return super().fit(df_sax_linearized_encoded.T, class_labels)
+
+    def fit_inverse_transformed(self, df_norm, class_labels, window_size,
+                                sax_variant, df_breakpoints=None, **symbol_mapping):
         """
         Fit the respective classifier from the inverse transformed time series
         training dataset.

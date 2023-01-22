@@ -4,7 +4,7 @@ from scipy.spatial import distance
 
 from utils import constant_segmentation_overlapping
 from pattern_recognition.motif_discovery.utils import _encode_symbols
-from pattern_recognition.utils import _get_linearized_encoded_sax
+from pattern_recognition.utils import get_linearized_encoded_sax
 
 
 """
@@ -278,7 +278,7 @@ def do_matrix_profile(df_norm, window_size, sax_variant, num_compare_segments,
         ValueError: If 'num_compare_segments' > num_segments.
     """
 
-    df_sax_linearized_encoded, df_sax = _get_linearized_encoded_sax(df_norm, window_size, sax_variant)
+    df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size, sax_variant)
 
     # split SAX word based on number of symbols per segment
     # for each time series, one dataframe per number of symbols per segment

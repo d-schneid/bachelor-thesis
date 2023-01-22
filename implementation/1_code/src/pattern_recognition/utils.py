@@ -3,7 +3,7 @@ from discretization.sax.abstract_sax import linearize_sax_word
 from pattern_recognition.motif_discovery.utils import _encode_symbols
 
 
-def _get_linearized_encoded_sax(df_norm, window_size, sax_variant):
+def get_linearized_encoded_sax(df_norm, window_size, sax_variant):
     """
     Transform the given time series dataset into its linearized and encoded SAX
     representation based on the given SAX variant.
