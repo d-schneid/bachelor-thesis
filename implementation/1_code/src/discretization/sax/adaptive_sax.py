@@ -4,6 +4,7 @@ import math
 import warnings
 from sklearn import metrics
 
+from utils import interpolate_segments
 from discretization.sax.sax import SAX
 from discretization.sax.symbol_mapping import IntervalNormMedian
 
@@ -461,3 +462,7 @@ class AdaptiveSAX(SAX):
         df_a_sax, df_breakpoints = self.transform(df_paa, df_breakpoints)
         return self.inv_transform(df_a_sax, ts_size, window_size,
                                   **symbol_mapping, df_breakpoints=df_breakpoints)
+
+    def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):
+        df_a_sax, df_breakpoints = self.transform(df_paa, df_breakpoints)
+        return interpolate_segments(df_a_sax, df_norm.shape[0], window_size)

@@ -232,3 +232,60 @@ class OneDSAX(AbstractSAX):
     def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
         df_one_d_sax = self.transform(df_paa, df_norm, window_size)
         return self.inv_transform(df_norm, df_one_d_sax, window_size, **symbol_mapping)
+
+    def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):
+        df_one_d_sax = self.transform(df_paa, df_norm, window_size)
+        return interpolate_segments(df_one_d_sax, df_norm.shape[0], window_size)
+
+    def adjust_symbolic_ts(self, df_symbolic_ts):
+        """
+        Adjust the given symbolic time series due to the separate alphabet for
+        slope values.
+        Without any adjustment, the same time series point mapped to the same
+        symbol for its respective segment means and different symbols for its
+        respective segment slopes would be considered as discretized into two
+        different bins.
+        But, this is not true if the different symbols for the segment slopes
+        are opposites of each other. Meaning one symbol describes decreasing
+        characteristics while the other describes the opposite increasing
+        characteristics.
+        Therefore, this method accounts for this fact by transforming every
+        two opposite slope symbols into one common symbol.
+
+        :param df_symbolic_ts: dataframe of shape (ts_size, num_ts)
+            The symbolic time series that shall be adjusted.
+        :return: dataframe of shape (ts_size, num_ts)
+        """
+
+        if self.alphabet_size_slope == 1:
+            return df_symbolic_ts
+        alphabet_mid_idx = round(self.alphabet_size_slope / 2) - 1
+        return df_symbolic_ts.applymap(self._adjust_slope_symbol, alphabet_mid_idx=alphabet_mid_idx)
+
+    def _adjust_slope_symbol(self, segment_symbols, alphabet_mid_idx):
+        """
+        Check the slope symbol of every segment and convert to its opposite
+        symbol in the alphabet for the slope values if its index is larger than
+        the index of the symbol in the middle of this alphabet.
+        This method is applied to every cell of the dataframe that contains the
+        symbolic time series.
+
+        :param segment_symbols: str of len = 2
+            The first character is the symbol for the respective segment mean,
+            the second character is the symbol for the respective segment
+            slope.
+        :param alphabet_mid_idx: int
+            The index of the symbol in the middle of the alphabet for the slope
+            values.
+        :return: str of len = 2
+            The symbol of the respective segment mean and the (possibly
+            converted) symbol of the respective segment slope.
+        """
+
+        avg_symbol = segment_symbols[0]
+        slope_symbol = segment_symbols[1]
+        slope_symbol_idx = np.where(self.alphabet_slope == slope_symbol)[0][0]
+        if slope_symbol_idx > alphabet_mid_idx:
+            slope_symbol_idx = self.alphabet_size_slope - 1 - slope_symbol_idx
+            slope_symbol = self.alphabet_slope[slope_symbol_idx]
+        return avg_symbol + slope_symbol

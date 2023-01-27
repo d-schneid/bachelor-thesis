@@ -5,20 +5,43 @@ from discretization.sax.abstract_sax import AbstractSAX
 from utils import constant_segmentation, interpolate_segments
 
 
-def _compute_segment_min_idx(segment):
+def _include_extrema(df_inv_mean, df_max, df_min):
     """
-    Compute the minimum value of the given time series segment along with its
-    corresponding index for each time series.
+    Map the maxima and minima of each segment to their respective symbol value.
 
-    :param segment: dataframe of shape (segment_size, num_ts)
-        The time series segment in which the minimum value along with its
-        corresponding index shall be computed for each time series.
-    :return:
-        pd.Series of shape (num_ts,)
-        pd.Series of shape (num_ts,)
+    :param df_inv_mean: dataframe of shape (ts_size, num_ts)
+        The inverse transformed time series dataset that is solely based on the
+        segment means. The symbol values for the maxima and minima shall be
+        included by replacing the respective placeholders based on the segment
+        means.
+    :param df_max: dataframe of shape (num_segments, num_ts)
+        Contains a tuple for each segment. The first entry of a tuple is the
+        index within the time series where the segment maximum is located. The
+        second entry of a tuple is the value of the respective segment maximum.
+    :param df_min: dataframe of shape (num_segments, num_ts)
+        Contains a tuple for each segment. The first entry of a tuple is the
+        index within the time series where the segment minimum is located. The
+        second entry of a tuple is the value of the respective segment minimum.
+    :return: dataframe of shape (ts_size, num_ts)
+        The inverse transformed time series dataset.
     """
 
-    return segment.idxmin(), segment.min()
+    # create a dictionary for each time series where the key is the
+    # position within the original time series and the value is the value
+    # of the mapped maximum or minimum point
+    mapping_max = [{tup[0]: tup[1] for tup in df_max.iloc[:, i]}
+                   for i in range(df_max.shape[1])]
+    mapping_min = [{tup[0]: tup[1] for tup in df_min.iloc[:, i]}
+                   for i in range(df_min.shape[1])]
+
+    # set the mapped values of the minimum and maximum points for each time
+    # series by overwriting the respective values of the segment mean
+    # interpolation
+    for i in range(df_inv_mean.shape[1]):
+        df_inv_mean.iloc[list(mapping_max[i].keys()), i] = mapping_max[i]
+        df_inv_mean.iloc[list(mapping_min[i].keys()), i] = mapping_min[i]
+
+    return df_inv_mean
 
 
 class ExtendedSAX(AbstractSAX):
@@ -113,10 +136,10 @@ class ExtendedSAX(AbstractSAX):
             segment_means.append(pd.Series(zip(pos_mid, segment_mean)))
 
             # find max with negative values
-            pos_min, segment_min = _compute_segment_min_idx(-segment)
+            pos_min, segment_min = (-segment).idxmin(), (-segment).min()
             segment_maxs.append(pd.Series(zip(pos_min, -segment_min)))
 
-            pos_min, segment_min = _compute_segment_min_idx(segment)
+            pos_min, segment_min = segment.idxmin(), segment.min()
             segment_mins.append(pd.Series(zip(pos_min, segment_min)))
 
         # transform second elements of tuples (values) into SAX symbols
@@ -225,26 +248,16 @@ class ExtendedSAX(AbstractSAX):
         symbol_mapping_min = symbol_mapping_mean if symbol_mapping_min is None else symbol_mapping_min
         df_mapped_min = self._inv_transform_extrema(df_sax_min, symbol_mapping_min)
 
-        # create a dictionary for each time series where the key is the
-        # position within the original time series and the value is the value
-        # of the mapped maximum or minimum point
-        mapping_max = [{tup[0]: tup[1] for tup in df_mapped_max.iloc[:, i]}
-                       for i in range(df_mapped_max.shape[1])]
-        mapping_min = [{tup[0]: tup[1] for tup in df_mapped_min.iloc[:, i]}
-                       for i in range(df_mapped_min.shape[1])]
-
-        df_inv_e_sax = df_inv_mean
-        # set the mapped values of the minimum and maximum points for each time
-        # series by overwriting the respective values of the segment mean
-        # interpolation
-        for i in range(df_inv_e_sax.shape[1]):
-            df_inv_e_sax.iloc[list(mapping_max[i].keys()), i] = mapping_max[i]
-            df_inv_e_sax.iloc[list(mapping_min[i].keys()), i] = mapping_min[i]
-
-        return df_inv_e_sax
+        return _include_extrema(df_inv_mean, df_mapped_max, df_mapped_min)
 
     def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
         ts_size = df_norm.shape[0]
         df_e_sax, df_sax_mean, df_sax_max, df_sax_min = self.transform(df_paa, df_norm, window_size)
         return self.inv_transform(df_sax_mean, df_sax_max, df_sax_min, ts_size,
                                   window_size, **symbol_mapping)
+
+    def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):
+        df_e_sax, df_sax_mean, df_sax_max, df_sax_min = self.transform(df_paa, df_norm, window_size)
+        df_symbols_mean = df_sax_mean.applymap(lambda tup: tup[1])
+        df_inv_symbols_mean = interpolate_segments(df_symbols_mean, df_norm.shape[0], window_size)
+        return _include_extrema(df_inv_symbols_mean, df_sax_max, df_sax_min)

@@ -158,3 +158,49 @@ class AbstractSAX(ABC):
         """
 
         pass
+
+    @abstractmethod
+    def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):
+        """
+        Transform the given PAA representations of time series into their
+        symbolic representation and interpolate this symbolic representation
+        to the whole time series.
+        This method is especially used for the computation of the inconsistency
+        metrics of the different SAX variants.
+
+        :param df_paa: dataframe of shape (num_segments, num_ts)
+            The PAA representations of the time series that shall be
+            transformed.
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The time series that belong to the given PAA representations.
+        :param window_size: int
+            The size of the window that was used to create the given PAA
+            representations.
+        :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts) (default = None)
+            Can only be used for the aSAX and is ignored for other SAX
+            variants.
+            The individual breakpoints for the PAA representations of the given
+            time series dataset that shall be used to transform the respective
+            PAA representation into its aSAX representation.
+            If None, the respective breakpoints resulting from the k-means
+            clustering of the respective PAA points are used.
+            This parameter is intended to allow breakpoints based on the
+            k-means clustering of the original normalized time series data
+            points.
+        :return: dataframe of shape (ts_size, num_ts)
+        """
+
+        pass
+
+    def adjust_symbolic_ts(self, df_symbolic_ts):
+        """
+        Adjust the given symbolic time series.
+        This is only needed for the 1d-SAX and does not have any effect for the
+        other SAX variants.
+
+        :param df_symbolic_ts: dataframe of shape (ts_size, num_ts)
+            The symbolic time series that shall be adjusted.
+        :return: dataframe of shape (ts_size, num_ts)
+        """
+
+        return df_symbolic_ts

@@ -87,6 +87,10 @@ class SAX(AbstractSAX):
         df_sax = self.transform(df_paa)
         return self.inv_transform(df_sax, ts_size, window_size, **symbol_mapping)
 
+    def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):
+        df_sax = self.transform(df_paa)
+        return interpolate_segments(df_sax, df_norm.shape[0], window_size)
+
     def _distance(self, df_alphabet_idx, ts_size, sax_idx):
         """
         Compute pairwise distances between the given SAX representation and all
