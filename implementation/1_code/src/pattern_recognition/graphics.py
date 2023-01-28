@@ -4,8 +4,9 @@ import matplotlib.pyplot as plt
 
 def plot_eval_metrics_comparison(raw, inverse_transformed, discretized_encoded):
     """
-    For each evaluation metric plot two bars. One for the non-discretized
-    fitted algorithm and the other for the discretized fitted algorithm.
+    For each evaluation metric plot three bars based on the data the algorithm
+    was fit on (raw time series, inverse transformed time series, discretized
+    and encoded time series).
 
     :param raw: dict
         Keys are the abbreviations of the used evaluation metrics. Values are
@@ -40,4 +41,5 @@ def plot_eval_metrics_comparison(raw, inverse_transformed, discretized_encoded):
 
     plt.xticks(np.arange(len(keys)) + num_bars * bar_width * bar_space / num_bars, keys)
     plt.legend()
+    plt.title("Comparison of Evaluation Metrics")
     plt.show()

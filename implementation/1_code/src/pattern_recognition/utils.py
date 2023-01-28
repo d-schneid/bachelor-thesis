@@ -20,10 +20,10 @@ def get_linearized_encoded_sax(df_norm, window_size, sax_variant):
     :return:
         df_sax_linearized_encoded: dataframe of shape
             (num_segments * symbols_per_segment, num_ts)
-            The linearized and encoded SAX representation of the given time
-            series dataset.
+            The linearized and encoded symbolic representation of the given
+            time series dataset.
         df_sax: dataframe of shape (num_segments, num_ts)
-            The SAX representation of the given time series dataset.
+            The symbolic representation of the given time series dataset.
     """
 
     paa = PAA(window_size=window_size)

@@ -49,7 +49,7 @@ class ExtendedSAX(AbstractSAX):
     Extended Symbolic Aggregate Approximation (eSAX).
 
     :param alphabet_size: int (default = 3)
-        The number of letters in the alphabet that shall be used for
+        The number of symbols in the alphabet that shall be used for
         discretization. The alphabet starts from 'a' and ends with 'z' at the
         latest.
     :raises:
@@ -64,6 +64,7 @@ class ExtendedSAX(AbstractSAX):
 
     def __init__(self, alphabet_size=3):
         super().__init__(alphabet_size=alphabet_size)
+        self.name = "eSAX"
         self.symbols_per_segment = 3
 
     def _transform(self, segment_list):

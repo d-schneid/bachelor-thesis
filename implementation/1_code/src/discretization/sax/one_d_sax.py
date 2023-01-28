@@ -1,3 +1,4 @@
+import math
 import warnings
 import numpy as np
 import pandas as pd
@@ -5,8 +6,8 @@ import pandas as pd
 from utils import constant_segmentation, interpolate_segments
 from discretization.sax.symbol_mapping import ValuePoints, IntervalNormMedian
 from discretization.sax.sax import SAX
-from discretization.sax.abstract_sax import (AbstractSAX,
-                                             NUM_ALPHABET_LETTERS, breakpoints)
+from discretization.sax.abstract_sax import (
+    AbstractSAX, NUM_ALPHABET_SYMBOLS, BITS_PER_TS_POINT, breakpoints)
 
 
 # the value of the numerator of the variance function given in [1] for the
@@ -68,11 +69,11 @@ class OneDSAX(AbstractSAX):
     One-D Symbolic Aggregate Approximation (1d-SAX).
 
     :param alphabet_size_avg: int (default = 3)
-        The number of letters in the alphabet that shall be used for
+        The number of symbols in the alphabet that shall be used for
         discretizing the average values of the segments. The alphabet starts
         from 'a' and ends with 'z' at the latest.
     :param alphabet_size_slope: int (default = 3)
-        The number of letters in the alphabet that shall be used for
+        The number of symbols in the alphabet that shall be used for
         discretizing the slope values of the segments. The alphabet starts
         from 'a' and ends with 'z' at the latest.
     :param var_slope: float or None (default = None)
@@ -89,18 +90,22 @@ class OneDSAX(AbstractSAX):
     """
 
     def __init__(self, alphabet_size_avg=3, alphabet_size_slope=3, var_slope=None):
-        if alphabet_size_slope > NUM_ALPHABET_LETTERS or alphabet_size_slope < 1:
+        if alphabet_size_slope > NUM_ALPHABET_SYMBOLS or alphabet_size_slope < 1:
             raise ValueError(f"The size of an alphabet needs to be between "
-                             f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
+                             f"1 (inclusive) and {NUM_ALPHABET_SYMBOLS} (inclusive)")
         super().__init__(alphabet_size=alphabet_size_avg)
+        self.name = "1d-SAX"
+
         self.alphabet_size_avg = self.alphabet_size
+        self.bits_per_symbol_avg = self.bits_per_symbol
         self.alphabet_avg = self.alphabet
         self.breakpoints_avg = self.breakpoints
 
         self.alphabet_size_slope = alphabet_size_slope
-        letters_slope = [chr(letter) for letter
+        self.bits_per_symbol_slope = math.ceil(np.log2(self.alphabet_size_slope))
+        symbols_slope = [chr(symbol) for symbol
                          in range(ord('a'), ord('a') + self.alphabet_size_slope)]
-        self.alphabet_slope = np.array(letters_slope)
+        self.alphabet_slope = np.array(symbols_slope)
         self.var_slope = var_slope
         self.symbols_per_segment = 2
         # breakpoints for slope values of the segments are determined during
@@ -289,3 +294,8 @@ class OneDSAX(AbstractSAX):
             slope_symbol_idx = self.alphabet_size_slope - 1 - slope_symbol_idx
             slope_symbol = self.alphabet_slope[slope_symbol_idx]
         return avg_symbol + slope_symbol
+
+    def compute_compression_ratio_percentage(self, ts_size, num_segments):
+        bits_ts = BITS_PER_TS_POINT * ts_size
+        bits_symbolic = (self.bits_per_symbol_avg + self.bits_per_symbol_slope) * num_segments
+        return (bits_symbolic / bits_ts) * 100

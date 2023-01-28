@@ -1,11 +1,15 @@
+import math
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
 from scipy.stats import norm
 
 
-# the number of letters in the Latin alphabet
-NUM_ALPHABET_LETTERS = 26
+# the number of symbols in the Latin alphabet
+NUM_ALPHABET_SYMBOLS = 26
+# assumed number of bits that are needed to store one time series point as
+# a floating-point number
+BITS_PER_TS_POINT = 64
 
 
 def breakpoints(alphabet_size, scale=1):
@@ -53,7 +57,7 @@ class AbstractSAX(ABC):
     inherit.
 
     :param alphabet_size: int (default = 3)
-        The number of letters in the alphabet that shall be used for
+        The number of symbols in the alphabet that shall be used for
         discretization. The alphabet starts from 'a' and ends with 'z' at the
         latest.
     :raises:
@@ -61,13 +65,14 @@ class AbstractSAX(ABC):
     """
 
     def __init__(self, alphabet_size=3):
-        if alphabet_size > NUM_ALPHABET_LETTERS or alphabet_size < 1:
+        if alphabet_size > NUM_ALPHABET_SYMBOLS or alphabet_size < 1:
             raise ValueError(f"The size of an alphabet needs to be between "
-                             f"1 (inclusive) and {NUM_ALPHABET_LETTERS} (inclusive)")
+                             f"1 (inclusive) and {NUM_ALPHABET_SYMBOLS} (inclusive)")
         self.alphabet_size = alphabet_size
-        letters = [chr(letter) for letter
+        self.bits_per_symbol = math.ceil(np.log2(self.alphabet_size))
+        symbols = [chr(symbol) for symbol
                    in range(ord('a'), ord('a') + self.alphabet_size)]
-        self.alphabet = np.array(letters)
+        self.alphabet = np.array(symbols)
         self.breakpoints = breakpoints(self.alphabet_size)
         self.symbols_per_segment = 1
 
@@ -204,3 +209,25 @@ class AbstractSAX(ABC):
         """
 
         return df_symbolic_ts
+
+    def compute_compression_ratio_percentage(self, ts_size, num_segments):
+        """
+        Compute the compression ratio in percentage. The compression ratio is
+        the ratio of the number of bits needed to store the symbolic
+        representation of a time series and the number of bits needed to store
+        the raw values of the corresponding time series.
+
+        :param ts_size: int
+            The size of the time series for that the compression ratio shall be
+            calculated.
+        :param num_segments: int
+            The number of (symbolic) points that the time series for that the
+            compression ratio shall be calculated shall have after transforming
+            it into its symbolic representation.
+        :return: float
+        """
+
+        bits_ts = BITS_PER_TS_POINT * ts_size
+        num_symbols = self.symbols_per_segment * num_segments
+        bits_symbolic = self.bits_per_symbol * num_symbols
+        return (bits_symbolic / bits_ts) * 100

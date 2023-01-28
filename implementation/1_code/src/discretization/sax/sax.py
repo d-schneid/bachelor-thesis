@@ -10,7 +10,7 @@ class SAX(AbstractSAX):
     Symbolic Aggregate Approximation (SAX).
 
     :param alphabet_size: int (default = 3)
-        The number of letters in the alphabet that shall be used for
+        The number of symbols in the alphabet that shall be used for
         discretization. The alphabet starts from 'a' and ends with 'z' at the
         latest.
     :raises:
@@ -25,6 +25,7 @@ class SAX(AbstractSAX):
 
     def __init__(self, alphabet_size=3):
         super().__init__(alphabet_size=alphabet_size)
+        self.name = "SAX"
 
     def transform(self, df_paa, *args, **kwargs):
         """

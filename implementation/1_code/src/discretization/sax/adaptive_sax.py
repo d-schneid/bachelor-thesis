@@ -250,7 +250,7 @@ def eval_k_means(df_paa, min_alphabet_size, max_alphabet_size):
     :raises:
         ValueError: If 'min_alphabet_size' > 'max_alphabet_size'.
         ValueError: If 'min_alphabet_size' < 1.
-        ValueError: If 'max_alphabet_size' > 26 (number of letters in Latin
+        ValueError: If 'max_alphabet_size' > 26 (number of symbols in Latin
                     alphabet).
     """
 
@@ -279,7 +279,7 @@ class AdaptiveSAX(SAX):
     Adaptive Symbolic Aggreagate Approximation (aSAX).
 
     :param alphabet_size: int (default = 3)
-        The number of letters in the alphabet that shall be used for
+        The number of symbols in the alphabet that shall be used for
         discretization. The alphabet starts from 'a' and ends with 'z' at the
         latest.
     :raises:
@@ -294,6 +294,7 @@ class AdaptiveSAX(SAX):
 
     def __init__(self, alphabet_size=3):
         super().__init__(alphabet_size=alphabet_size)
+        self.name = "aSAX"
         # initialize the k-means algorithm always with the breakpoints used
         # in the classic SAX (equiprobable regions of the standard normal
         # distribution)

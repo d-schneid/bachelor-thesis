@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from statsmodels.api import qqplot
 
 from utils import constant_segmentation, interpolate_segments
@@ -290,4 +291,48 @@ def plot_sax_variants(df_norm, df_paa_inv, df_sax_inv, df_a_sax_inv,
     plt.title(f"Extended SAX\n{e_sax_alphabet_size} symbols")
 
     plt.tight_layout()
+    plt.show()
+
+
+def plot_compression_ratio_comparison(compression_ratios, alphabet_sizes):
+    """
+    For each given alphabet size plot four bars corresponding to the
+    compression ratios in percentage for the respective SAX variants.
+
+    :param compression_ratios: dict of len = 4
+        Keys are the names of the four SAX variants. Values are lists
+        containing the compression ratio for each evaluated alphabet size for
+        the respective SAX variant.
+    :param alphabet_sizes: list
+        Contains the alphabet sizes in ascending order for that the compression
+        ratio was computed.
+    :return: None
+    """
+
+    fig = plt.figure(figsize=(15, 5))
+    ax = fig.add_subplot(111)
+    bar_width = 0.05
+    bar_space = 1.3
+    num_bars = 4
+
+    keys = list(compression_ratios.keys())
+    ax.bar(np.arange(len(alphabet_sizes)), compression_ratios[keys[0]], width=bar_width,
+           label=keys[0], edgecolor="black")
+    ax.bar(np.arange(len(alphabet_sizes)) + bar_width * bar_space,
+           compression_ratios[keys[1]], width=bar_width, label=keys[1], edgecolor="black")
+    ax.bar(np.arange(len(alphabet_sizes)) + (num_bars - 2) * bar_width * bar_space,
+           compression_ratios[keys[2]], width=bar_width, label=keys[2], edgecolor="black")
+    ax.bar(np.arange(len(alphabet_sizes)) + (num_bars - 1) * bar_width * bar_space,
+           compression_ratios[keys[3]], width=bar_width, label=keys[3], edgecolor="black")
+
+    formatter = ticker.FuncFormatter(lambda x, pos: f"{x}%")
+    ax.yaxis.set_major_formatter(formatter)
+
+    xticks_locations = (np.arange(len(alphabet_sizes)) + (num_bars - 2) * bar_width * bar_space / 2)\
+                       + (bar_width * bar_space) * (num_bars - 3) / 2
+    plt.xticks(xticks_locations, alphabet_sizes)
+    ax.set_xlabel("Alphabet size")
+
+    plt.legend()
+    plt.title("Compression Ratio")
     plt.show()

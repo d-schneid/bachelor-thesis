@@ -48,7 +48,7 @@ class IntervalNormMedian(SymbolMapping):
     corresponding SAX symbol of the breakpoint interval.
 
     :param alphabet_size: int
-        The number of letters of the alphabet that was used for creating the
+        The number of symbols of the alphabet that was used for creating the
         SAX representations whose symbols shall be mapped by this mapping
         strategy.
     :param var: float (default = 1)
