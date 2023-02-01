@@ -231,3 +231,98 @@ class AbstractSAX(ABC):
         num_symbols = self.symbols_per_segment * num_segments
         bits_symbolic = self.bits_per_symbol * num_symbols
         return (bits_symbolic / bits_ts) * 100
+
+    def _transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
+        """
+        Wrapper for the transformation of the time series based on the
+        respective SAX variant. Only returns the symbolic representations of
+        the time series that result from the transformation and nothing else.
+
+        :param df_paa: dataframe of shape (num_segments, num_ts)
+            The PAA representations of the given normalized time series
+            dataset.
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The normalized time series dataset that shall be transformed into
+            its symbolic representations.
+        :param window_size: int
+            The size of the window that was used to create the given PAA
+            representations.
+        :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts)
+            Is ignored for all SAX variants except the aSAX.
+            The individual breakpoints for the given PAA representations of the
+            given time series dataset that shall be used to transform the
+            respective PAA representation into its aSAX representation.
+            If None, the respective breakpoints resulting from the k-means
+            clustering of the respective PAA points are used.
+            With this parameter breakpoints based on the k-means clustering of
+            the original normalized time series data points are also possible.
+        :return: dataframe of shape (num_segments, num_ts)
+        """
+
+        return self.transform(df_paa=df_paa, df_norm=df_norm, window_size=window_size,
+                              df_breakpoints=df_breakpoints)
+
+    def transform_to_symbolic_repr_histogram(self, df_paa, df_norm, window_size, df_breakpoints):
+        """
+        Hook method for the transformation of the time series into the symbolic
+        representation that is used to compute histograms for the computation
+        of the Kullback-Leibler divergence based on the respective SAX variant.
+
+        :param df_paa: dataframe of shape (num_segments, num_ts)
+            The PAA representations of the given normalized time series
+            dataset.
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The normalized time series dataset that shall be transformed into
+            its symbolic representations.
+        :param window_size: int
+            The size of the window that was used to create the given PAA
+            representations.
+        :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts)
+            Is ignored for all SAX variants except the aSAX.
+            The individual breakpoints for the given PAA representations of the
+            given time series dataset that shall be used to transform the
+            respective PAA representation into its aSAX representation.
+            If None, the respective breakpoints resulting from the k-means
+            clustering of the respective PAA points are used.
+            With this parameter breakpoints based on the k-means clustering of
+            the original normalized time series data points are also possible.
+        :return: dataframe
+            The symbolic representations of the given time series dataset based
+            on the respective SAX variant that are used to compute histograms
+            for the computation of the Kullback-Leibler divergence.
+        """
+
+        return self._transform_to_symbolic_repr_only(df_paa, df_norm, window_size, df_breakpoints)
+
+    def get_histogram_bins(self):
+        """
+        This is a hook method that determines the alphabet that shall be used
+        for building histograms for the computation of the Kullback-Leibler
+        divergence between raw time series and their symbolic representations.
+
+        :return: np.array
+            The alphabet of the respective SAX variant except for the 1d-SAX.
+            For the 1d-SAX, it returns the cartesian product of the alphabet
+            for the segment means and the alphabet for the segement slopes.
+        """
+
+        return self.alphabet
+
+    def compute_raw_bin_idxs(self, df_norm, hist_binning):
+        """
+        This is a hook method that assigns each point for each time series to
+        the histogram bin whose breakpoints correspond to the value of the
+        respective point.
+
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The original normalized time series dataset for that the histogram
+            shall be built.
+        :param hist_binning: HistogramBinning
+            The strategy with which the bins for the histogram shall be built.
+        :return: dataframe of shape (ts_size, num_ts)
+            Each point of each given time series is assigned its corresponding
+            bin id in the form of a symbol of the respective alphabet based on
+            the SAX variant.
+        """
+
+        return hist_binning.assign_histogram_bins(df_norm, self.alphabet)

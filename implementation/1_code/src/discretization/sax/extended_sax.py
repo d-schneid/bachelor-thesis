@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from discretization.sax.abstract_sax import AbstractSAX
+from discretization.sax.abstract_sax import AbstractSAX, linearize_sax_word
 from utils import constant_segmentation, interpolate_segments
 
 
@@ -87,7 +87,7 @@ class ExtendedSAX(AbstractSAX):
             np.searchsorted(self.breakpoints, tup[1], side="right")]))
         return df_sax.applymap(lambda tup: [tup])
 
-    def transform(self, df_paa, df_norm, window_size):
+    def transform(self, df_paa, df_norm, window_size, *args, **kwargs):
         """
         Transform each time series into its eSAX representation.
         It does not modify the given time series before computation, such as
@@ -262,3 +262,13 @@ class ExtendedSAX(AbstractSAX):
         df_symbols_mean = df_sax_mean.applymap(lambda tup: tup[1])
         df_inv_symbols_mean = interpolate_segments(df_symbols_mean, df_norm.shape[0], window_size)
         return _include_extrema(df_inv_symbols_mean, df_sax_max, df_sax_min)
+
+    def _transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
+        df_e_sax, df_sax_mean, df_sax_max, df_sax_min = self.transform(df_paa=df_paa, df_norm=df_norm,
+                                                                       window_size=window_size,
+                                                                       df_breakpoints=df_breakpoints)
+        return df_e_sax
+
+    def transform_to_symbolic_repr_histogram(self, df_paa, df_norm, window_size, df_breakpoints):
+        df_e_sax = self._transform_to_symbolic_repr_only(df_paa, df_norm, window_size, df_breakpoints)
+        return linearize_sax_word(df_e_sax, self.symbols_per_segment)

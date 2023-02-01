@@ -1,5 +1,6 @@
 import math
 import warnings
+import itertools
 import numpy as np
 import pandas as pd
 
@@ -130,7 +131,7 @@ class OneDSAX(AbstractSAX):
         self.breakpoints_slope = breakpoints(self.alphabet_size_slope,
                                              scale=self.var_slope)
 
-    def transform(self, df_paa, df_norm, window_size):
+    def transform(self, df_paa, df_norm, window_size, *args, **kwargs):
         """
         Transform the normalized time series dataset into its 1d-SAX
         representations (i.e. assign each time series its respective 1d-SAX
@@ -299,3 +300,16 @@ class OneDSAX(AbstractSAX):
         bits_ts = BITS_PER_TS_POINT * ts_size
         bits_symbolic = (self.bits_per_symbol_avg + self.bits_per_symbol_slope) * num_segments
         return (bits_symbolic / bits_ts) * 100
+
+    def get_histogram_bins(self):
+        return np.array(["".join(symbols_avg_slope) for symbols_avg_slope in
+                         itertools.product(self.alphabet_avg, self.alphabet_slope)])
+
+    def compute_raw_bin_idxs(self, df_norm, hist_binning):
+        df_bin_idxs_avg = hist_binning.assign_histogram_bins(df_norm.tail(-1), self.alphabet_avg)
+        # use first differences as 'true' slopes of time series points
+        df_first_diffs = (df_norm - df_norm.shift(1)).tail(-1)
+        df_bin_idxs_slope = hist_binning.assign_histogram_bins(df_first_diffs, self.alphabet_slope)
+        df_bin_idxs = df_bin_idxs_avg + df_bin_idxs_slope
+
+        return df_bin_idxs
