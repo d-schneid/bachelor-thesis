@@ -4,7 +4,7 @@ import itertools
 import numpy as np
 import pandas as pd
 
-from utils import constant_segmentation, interpolate_segments
+from utils import constant_segmentation, interpolate_segments, scale_min_max
 from discretization.sax.symbol_mapping import ValuePoints, IntervalNormMedian
 from discretization.sax.sax import SAX
 from discretization.sax.abstract_sax import (
@@ -167,7 +167,7 @@ class OneDSAX(AbstractSAX):
         return df_one_d_sax
 
     def inv_transform(self, df_norm, df_one_d_sax, window_size,
-                      symbol_mapping_avg, symbol_mapping_slope):
+                      symbol_mapping_avg, symbol_mapping_slope, *args, **kwargs):
         """
         Approximate the original time series dataset by transforming its 1d-SAX
         representations into a time series dataset with the same size. Each
@@ -227,12 +227,21 @@ class OneDSAX(AbstractSAX):
         df_mapped_slope = symbol_mapping_slope.get_mapped(df_slope,
                                                           self.alphabet_slope,
                                                           self.breakpoints_slope)
+        # when symbol mapping strategy 'EncodedMinMaxScaling' is used for the
+        # segment means, they are transformed to the range [0, 1]
+        # therefore, the segment slopes need to be adjusted accordingly
+        if kwargs.get("scale_slopes", False):
+            df_mapped_slope /= (df_norm.max() - df_norm.min())
         df_slope = interpolate_segments(df_mapped_slope, ts_size, window_size)
 
         time_diff = pd.Series(df_norm.index.values) - time_segment_middle
         df_slope_time_diff = df_slope.mul(time_diff, axis=0)
 
         df_inv = df_avg + df_slope_time_diff
+        # due to the separate transformations of segment means and segment
+        # slopes, points can be slightly out of the range of [0, 1]
+        if kwargs.get("scale_slopes", False):
+            return scale_min_max(df_inv, df_inv.min(), df_inv.max())
         return df_inv
 
     def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):

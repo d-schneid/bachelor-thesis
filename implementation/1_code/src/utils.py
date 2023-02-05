@@ -209,3 +209,19 @@ def get_metric_instance(module_name, metric):
 
     # instantiate found subclass of abstract class 'PPMetric'
     return Metric()
+
+
+def scale_min_max(ts, minimum, maximum):
+    """
+    Transform the points by scaling them to the range [0, 1].
+
+    :param ts: array-like
+        The points that shall be transformed.
+    :param minimum: array-like or float
+        The minimum of the given points.
+    :param maximum: array-like or float
+        The maximum of the given points.
+    :return: array-like
+    """
+
+    return (ts - minimum) / (maximum - minimum)

@@ -190,8 +190,9 @@ class ExtendedSAX(AbstractSAX):
         # the original time series
         return df_pos + df_mapped
 
-    def inv_transform(self, df_sax_mean, df_sax_max, df_sax_min, ts_size, window_size,
-                      symbol_mapping_mean, symbol_mapping_max=None, symbol_mapping_min=None):
+    def inv_transform(self, df_sax_mean, df_sax_max, df_sax_min, ts_size,
+                      window_size, symbol_mapping_mean, symbol_mapping_max=None,
+                      symbol_mapping_min=None, *args, **kwargs):
         """
         Approximate the original time series dataset by transforming its eSAX
         representations into a time series dataset with the same size.

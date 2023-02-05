@@ -3,6 +3,8 @@ import pandas as pd
 from abc import ABC, abstractmethod
 from scipy.stats import norm
 
+from utils import scale_min_max
+
 
 class SymbolMapping(ABC):
     """
@@ -252,3 +254,20 @@ class MedianValuePoints(ValuePoints):
 
     def get_symbol_values(self, grouped_by_symbol):
         return grouped_by_symbol.median()
+
+
+class EncodedMinMaxScaling(SymbolMapping):
+    """
+    For this mapping strategy, the symbols of the respective alphabet are given
+    their respective index in the alphabet which are then scaled to the range
+    [0, 1]. Hence, each symbol of the alphabet is assigned its scaled index in
+    the respective alphabet in the scaled range [0, 1] as its symbol value.
+    """
+
+    def get_mapped(self, df_sax, alphabet, breakpoints=None, *args):
+        encoded_alphabet = np.char.find("".join(alphabet), alphabet)
+        scaled_encoded_alphabet = scale_min_max(encoded_alphabet, np.min(encoded_alphabet),
+                                                np.max(encoded_alphabet))
+        mapping = dict(zip(alphabet, scaled_encoded_alphabet))
+
+        return df_sax.replace(mapping)
