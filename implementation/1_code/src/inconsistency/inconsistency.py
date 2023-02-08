@@ -1,4 +1,3 @@
-import random
 import pandas as pd
 from abc import ABC, abstractmethod
 
@@ -33,12 +32,11 @@ class Unweighted(InconsistencyMode):
 
     def compute_inconsistency(self, epsilon_pts_bins):
         """
-        Compute the inconsistency rate of the randomly chosen time series
-        point.
+        Compute the inconsistency rate of the current time series point.
 
         :param epsilon_pts_bins: pd.Series
-            Contains all points in the epsilon neighborhood of the randomly
-            chosen time series point with their corresponding bins.
+            Contains all points in the epsilon neighborhood of the current time
+            series point with their corresponding bins.
         :return: float
         """
 
@@ -47,12 +45,12 @@ class Unweighted(InconsistencyMode):
 
     def compute_sum(self, epsilon_pts_bins):
         """
-        Helps to count the number of randomly chosen points.
+        Helps to count the number of points in the time series.
 
         :param epsilon_pts_bins: pd.Series
             Is ignored, just here for API consistency.
-            Contains all points in the epsilon neighborhood of the randomly
-            chosen time series point with their corresponding bins.
+            Contains all points in the epsilon neighborhood of the current time
+            series point with their corresponding bins.
         :return: int
         """
 
@@ -60,12 +58,12 @@ class Unweighted(InconsistencyMode):
 
     def compute_num_bins(self, epsilon_pts_bins):
         """
-        Compute the number of different discretization bins the randomly chosen
-        time series point was assigned to.
+        Compute the number of different discretization bins the current time
+        series point was assigned to.
 
         :param epsilon_pts_bins: pd.Series
-            Contains all points in the epsilon neighborhood of the randomly
-            chosen time series point with their corresponding bins.
+            Contains all points in the epsilon neighborhood of the current time
+            series point with their corresponding bins.
         :return: int
         """
 
@@ -83,12 +81,12 @@ class Weighted(InconsistencyMode):
 
     def compute_inconsistency(self, epsilon_pts_bins):
         """
-        Compute the absolute inconsistency value of the randomly chosen time
-        series point.
+        Compute the absolute inconsistency value of the current time series
+        point.
 
         :param epsilon_pts_bins: pd.Series
-            Contains all points in the epsilon neighborhood of the randomly
-            chosen time series point with their corresponding bins.
+            Contains all points in the epsilon neighborhood of the current time
+            series point with their corresponding bins.
         :return: int
         """
 
@@ -97,13 +95,13 @@ class Weighted(InconsistencyMode):
 
     def compute_sum(self, epsilon_pts_bins):
         """
-        Helps to sum up the weights of the randomly chosen time series points.
-        The weight of a randomly chosen time series point are the occurrences
-        of this point in the time series.
+        Helps to sum up the weights of the time series points.
+        The weight of a time series point is the number of its occurrences in
+        the time series.
 
         :param epsilon_pts_bins: pd.Series
-            Contains all points in the epsilon neighborhood of the randomly
-            chosen time series point with their corresponding bins.
+            Contains all points in the epsilon neighborhood of the current time
+            series point with their corresponding bins.
         :return: int
         """
 
@@ -111,13 +109,13 @@ class Weighted(InconsistencyMode):
 
     def compute_num_bins(self, epsilon_pts_bins):
         """
-        Compute the number of different discretization bins the randomly chosen
-        time series point was assigned to; weighted by the occurrences of the
+        Compute the number of different discretization bins the current time
+        series point was assigned to; weighted by the occurrences of the
         respective time series point in the time series
 
         :param epsilon_pts_bins: pd.Series
-            Contains all points in the epsilon neighborhood of the randomly
-            chosen time series point with their corresponding bins.
+            Contains all points in the epsilon neighborhood of the current time
+            series point with their corresponding bins.
         :return: int
         """
 
@@ -125,14 +123,13 @@ class Weighted(InconsistencyMode):
 
 
 def compute_inconsistency_metrics(df_norm, window_size, sax_variant, inconsistency_mode,
-                                  num_iter, epsilon, seed=1, df_breakpoints=None):
+                                  epsilon, df_breakpoints=None):
     """
     Compute the unweighted or weighted mean inconsistency rate per time series
     point and the unweighted or weighted mean number of discretization bins per
     time series point.
-    The inconsistency metrics are computed based on a Monte Carlo simulation
-    where in each round a point from the current time series is drawn at
-    random and evaluated based on its inconsistency.
+    The inconsistency metrics are computed by iterating and evaluating each
+    point of a time series based on its inconsistency.
 
     :param df_norm: dataframe of shape (ts_size, num_ts)
         The time series for that the inconsistency metrics shall be computed.
@@ -145,19 +142,12 @@ def compute_inconsistency_metrics(df_norm, window_size, sax_variant, inconsisten
     :param inconsistency_mode: InconsistencyMode
         Determines if the unweighted or weighted inconsistency metrics shall be
         computed.
-    :param num_iter: int
-        For each given time series, the number of times a random point from the
-        respective time series shall be chosen.
     :param epsilon: float
         The tolerance for time series points to be considered equal.
-        All points that are in the neighborhood of the randomly chosen point:
+        All points that are in the neighborhood of the current point:
         current_point - epsilon <= current_point <= current_point + epsilon
         are considered equal to this point.
         This is needed, because in most time series floating points are used.
-    :param seed: int (default = 1)
-        The seed that shall be used as a starting point to randomly choose
-        a point from the current time series in the current iteration whose
-        inconsistency metrics shall be computed.
     :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts) (default = None)
         Can only be used for the aSAX as 'sax_variant' and is ignored for other
         SAX variants.
@@ -187,9 +177,8 @@ def compute_inconsistency_metrics(df_norm, window_size, sax_variant, inconsisten
     for i in range(num_ts):
         current_ts = df_norm.iloc[:, i]
         current_symbolic_ts = df_symbolic_ts.iloc[:, i]
-        for it in range(num_iter):
-            random.seed(seed + i + it)
-            current_pt = random.choice(current_ts)
+        for pt_idx in range(len(current_ts)):
+            current_pt = current_ts[pt_idx]
             lower_bound, upper_bound = current_pt - epsilon, current_pt + epsilon
             # epsilon neighborhood of current_pt
             epsilon_pts = current_ts[current_ts.between(lower_bound, upper_bound)]
