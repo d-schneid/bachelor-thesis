@@ -232,7 +232,7 @@ class AbstractSAX(ABC):
         num_bits_symbolic = self.bits_per_symbol * num_symbols
         return (num_bits_symbolic / num_bits_ts) * 100
 
-    def _transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
+    def transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
         """
         Wrapper for the transformation of the time series based on the
         respective SAX variant. Only returns the symbolic representations of
@@ -292,7 +292,7 @@ class AbstractSAX(ABC):
             for the computation of the Kullback-Leibler divergence.
         """
 
-        return self._transform_to_symbolic_repr_only(df_paa, df_norm, window_size, df_breakpoints)
+        return self.transform_to_symbolic_repr_only(df_paa, df_norm, window_size, df_breakpoints)
 
     def get_histogram_bins(self):
         """

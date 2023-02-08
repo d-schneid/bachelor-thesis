@@ -81,12 +81,8 @@ def _get_sax_subsequences(df_norm, len_subsequence, window_size, sax_variant, ga
     # treat subsequences as usual time series
     df_sax_lst = []
     for i in range(num_ts):
-        # last two arguments are only needed for 1d-SAX and eSAX
-        df_sax = sax_variant.transform(df_paa=df_paa_lst[i], df_norm=df_subsequences_lst[i], window_size=window_size)
-        # eSAX and aSAX additionally return data for inverse transformation
-        # extract only symbolic transformation
-        if type(df_sax) is tuple:
-            df_sax = df_sax[0]
+        df_sax = sax_variant.transform_to_symbolic_repr_only(df_paa=df_paa_lst[i], df_norm=df_subsequences_lst[i],
+                                                             window_size=window_size, df_breakpoints=None)
         df_sax_lst.append(df_sax)
 
     df_sax_lst = [linearize_sax_word(df_sax, sax_variant.symbols_per_segment)

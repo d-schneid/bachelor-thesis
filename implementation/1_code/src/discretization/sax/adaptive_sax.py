@@ -468,7 +468,7 @@ class AdaptiveSAX(SAX):
         df_a_sax, df_breakpoints = self.transform(df_paa, df_breakpoints)
         return interpolate_segments(df_a_sax, df_norm.shape[0], window_size)
 
-    def _transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
+    def transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
         df_a_sax, df_breakpoints = self.transform(df_paa=df_paa, df_norm=df_norm,
                                                   window_size=window_size,
                                                   df_breakpoints=df_breakpoints)

@@ -264,7 +264,7 @@ class ExtendedSAX(AbstractSAX):
         df_inv_symbols_mean = interpolate_segments(df_symbols_mean, df_norm.shape[0], window_size)
         return _include_extrema(df_inv_symbols_mean, df_sax_max, df_sax_min)
 
-    def _transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
+    def transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
         df_e_sax, df_sax_mean, df_sax_max, df_sax_min = self.transform(df_paa=df_paa, df_norm=df_norm,
                                                                        window_size=window_size,
                                                                        df_breakpoints=df_breakpoints)
