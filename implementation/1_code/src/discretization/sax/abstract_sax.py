@@ -227,10 +227,10 @@ class AbstractSAX(ABC):
         :return: float
         """
 
-        bits_ts = BITS_PER_TS_POINT * ts_size
+        num_bits_ts = BITS_PER_TS_POINT * ts_size
         num_symbols = self.symbols_per_segment * num_segments
-        bits_symbolic = self.bits_per_symbol * num_symbols
-        return (bits_symbolic / bits_ts) * 100
+        num_bits_symbolic = self.bits_per_symbol * num_symbols
+        return (num_bits_symbolic / num_bits_ts) * 100
 
     def _transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
         """

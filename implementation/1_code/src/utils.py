@@ -21,16 +21,6 @@ def constant_segmentation(ts_size, window_size):
             The index of the upper segment bound (exclusive) for each window.
         num_segments : int
             The number of segments.
-
-    Examples
-    --------
-    start, end, num_segments = segmentation(ts_size=11, window_size=3)
-    print(start)
-    [0, 3, 6, 9]
-    print(end)
-    [3, 6, 9, 11]
-    print(num_segments)
-    4
     """
 
     if not isinstance(ts_size, (int, np.integer)):

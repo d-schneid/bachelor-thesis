@@ -306,9 +306,9 @@ class OneDSAX(AbstractSAX):
         return avg_symbol + slope_symbol
 
     def compute_compression_ratio_percentage(self, ts_size, num_segments):
-        bits_ts = BITS_PER_TS_POINT * ts_size
-        bits_symbolic = (self.bits_per_symbol_avg + self.bits_per_symbol_slope) * num_segments
-        return (bits_symbolic / bits_ts) * 100
+        num_bits_ts = BITS_PER_TS_POINT * ts_size
+        num_bits_symbolic = (self.bits_per_symbol_avg + self.bits_per_symbol_slope) * num_segments
+        return (num_bits_symbolic / num_bits_ts) * 100
 
     def get_histogram_bins(self):
         return np.array(["".join(symbols_avg_slope) for symbols_avg_slope in
