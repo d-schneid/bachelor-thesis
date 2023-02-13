@@ -109,7 +109,7 @@ def _compute_histogram(df_bin_idxs, sax_variant):
     df_hist_abs = df_hist_abs.reindex(sax_variant.get_histogram_bins()).fillna(0)
     # smoothing parameter to avoid 0 in computation of Kullback-Leibler
     # divergence
-    df_hist_abs = df_hist_abs + SMOOTHING_PARAM
+    df_hist_abs += SMOOTHING_PARAM
     df_hist_rel = df_hist_abs / df_hist_abs.sum()
 
     return df_hist_rel
