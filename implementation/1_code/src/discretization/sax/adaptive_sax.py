@@ -6,7 +6,7 @@ from sklearn import metrics
 
 from utils import interpolate_segments
 from discretization.sax.sax import SAX
-from discretization.sax.symbol_mapping import IntervalNormMedian
+from discretization.symbol_mapping import IntervalNormMedian
 
 
 # the k-means algorithm of the aSAX stops when the relative change of the
@@ -459,9 +459,8 @@ class AdaptiveSAX(SAX):
         return pd.concat(inv_a_sax_reprs, axis=1)
 
     def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
-        ts_size = df_norm.shape[0]
         df_a_sax, df_breakpoints = self.transform(df_paa, df_breakpoints)
-        return self.inv_transform(df_a_sax, ts_size, window_size,
+        return self.inv_transform(df_a_sax, df_norm.shape[0], window_size,
                                   **symbol_mapping, df_breakpoints=df_breakpoints)
 
     def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):

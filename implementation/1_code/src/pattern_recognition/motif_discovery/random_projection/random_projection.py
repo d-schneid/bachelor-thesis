@@ -5,7 +5,6 @@ import numpy as np
 from approximation.paa import PAA
 from discretization.sax.sax import SAX
 from discretization.sax.one_d_sax import OneDSAX
-from discretization.sax.abstract_sax import AbstractSAX
 from utils import constant_segmentation_overlapping, constant_segmentation
 from discretization.sax.abstract_sax import linearize_sax_word
 from pattern_recognition.motif_discovery.utils import _remove_trivial
@@ -523,10 +522,6 @@ def do_random_projection(df_norm, len_subsequence, window_size, sax_variant,
         raise ValueError("The size of the window with which the "
                          "subsequences are segmented needs to be smaller or "
                          "equal to the length of the subsequences.")
-    if not isinstance(sax_variant, AbstractSAX):
-        raise ValueError("The symbolic representations of the subsequences "
-                         "can only be computed by on of the SAX variants "
-                         "that inherit from 'AbstractSAX'.")
     num_segments = constant_segmentation(len_subsequence, window_size)[2]
     if mask_size >= num_segments:
         raise ValueError("The symbolic representations of the subsequences "

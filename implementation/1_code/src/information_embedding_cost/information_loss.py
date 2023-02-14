@@ -1,6 +1,5 @@
 from utils import scale_min_max, get_metric_instance
-from approximation.paa import PAA
-from discretization.sax.symbol_mapping import EncodedMinMaxScaling
+from discretization.symbol_mapping import EncodedMinMaxScaling
 from pp_metrics.pp_metrics import PP_METRICS_MODULE
 
 

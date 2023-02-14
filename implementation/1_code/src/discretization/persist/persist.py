@@ -1,6 +1,10 @@
+import warnings
 import numpy as np
 import pandas as pd
 
+from utils import interpolate_segments
+from discretization.symbol_mapping import IntervalNormMedian
+from discretization.abstract_discretization import AbstractDiscretization, _get_alphabet_symbols
 from discretization.persist.persistence_score import _compute_persistence_score
 
 
@@ -112,3 +116,83 @@ def do_persist(df_norm, min_alphabet_size, max_alphabet_size, skip):
 
     discretization_breakpoints = _select_best_breakpoints(min_alphabet_size, best_p_scores, best_breakpts_ts)
     return discretization_breakpoints, best_p_scores
+
+
+class Persist(AbstractDiscretization):
+
+    def __init__(self, min_alphabet_size, max_alphabet_size=None, skip=None):
+        if max_alphabet_size is not None:
+            if min_alphabet_size > max_alphabet_size:
+                raise ValueError("The maximum alphabet size needs to be at "
+                                 "least as large as the minimum alphabet size.")
+        if skip is not None:
+            if skip < 1:
+                raise ValueError("The 'skip' needs to be at least 1.")
+
+        super().__init__(alphabet_size=min_alphabet_size)
+        self.name = "Persist"
+        self.min_alphabet_size = min_alphabet_size
+        self.max_alphabet_size = min_alphabet_size if max_alphabet_size is None else max_alphabet_size
+        self.skip = 1 if skip is None else skip
+
+    def find_breakpoints(self, df_paa):
+        breakpoints, best_p_scores = do_persist(df_paa, self.min_alphabet_size,
+                                                self.max_alphabet_size, self.skip)
+
+        return breakpoints
+
+    def transform(self, df_paa, df_norm, df_breakpoints=None, *args, **kwargs):
+        if df_breakpoints is None:
+            df_breakpoints, best_p_scores = do_persist(df_norm, self.min_alphabet_size,
+                                                       self.max_alphabet_size, self.skip)
+        symbolic_ts = []
+        alphabets = []
+        for idx, curr_breakpoints in enumerate(df_breakpoints):
+            alphabet_idx = np.searchsorted(curr_breakpoints, df_paa.iloc[:, idx], side="right")
+
+            # same number of breakpoints/alphabet for each time series
+            if self.min_alphabet_size == self.max_alphabet_size:
+                alphabet = self.alphabet
+            # time series can have different number of breakpoints/alphabets
+            else:
+                alphabet_size = len(curr_breakpoints) + 1
+                alphabet = np.array(_get_alphabet_symbols(alphabet_size))
+
+            symbolic_ts.append(pd.Series(alphabet[alphabet_idx]))
+            alphabets.append(alphabet)
+
+        return pd.concat(symbolic_ts, axis=1), alphabets, df_breakpoints
+
+    def inv_transform(self, df_persist, ts_size, window_size, symbol_mapping,
+                      alphabets, breakpoints, *args, **kwargs):
+        if isinstance(symbol_mapping, IntervalNormMedian):
+            warnings.warn("Use the chosen 'symbol_mapping' strategy with "
+                          "caution, because in the Persist, the breakpoint "
+                          "intervals are not determined based on a Gaussian "
+                          "distribution.")
+
+        inv_persist_reprs = []
+        for idx in range(df_persist.shape[1]):
+            current_ts = df_persist.iloc[:, idx].to_frame()
+            current_breakpoints = np.array(breakpoints[idx])
+            current_alphabet = np.array(alphabets[idx])
+            df_mapped = symbol_mapping.get_mapped(current_ts, current_alphabet, current_breakpoints, idx)
+            df_inv_persist = interpolate_segments(df_mapped, ts_size, window_size)
+            inv_persist_reprs.append(df_inv_persist)
+
+        return pd.concat(inv_persist_reprs, axis=1)
+
+    def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
+        df_persist, alphabets, df_breakpoints = self.transform(df_paa, df_norm, df_breakpoints)
+        return self.inv_transform(df_persist, df_norm.shape[0], window_size,
+                                  **symbol_mapping, alphabets=alphabets, breakpoints=df_breakpoints)
+
+    def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):
+        df_persist, alphabets, df_breakpoints = self.transform(df_paa, df_norm, df_breakpoints)
+        return interpolate_segments(df_persist, df_norm.shape[0], window_size)
+
+    def transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
+        df_persist, alphabets, breakpoints = self.transform(df_paa=df_paa, df_norm=df_norm,
+                                                            window_size=window_size,
+                                                            df_breakpoints=df_breakpoints)
+        return df_persist

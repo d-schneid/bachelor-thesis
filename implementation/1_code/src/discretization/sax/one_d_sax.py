@@ -5,10 +5,11 @@ import numpy as np
 import pandas as pd
 
 from utils import constant_segmentation, interpolate_segments, scale_min_max
-from discretization.sax.symbol_mapping import ValuePoints, IntervalNormMedian
+from discretization.symbol_mapping import ValuePoints, IntervalNormMedian
 from discretization.sax.sax import SAX
-from discretization.sax.abstract_sax import (
-    AbstractSAX, NUM_ALPHABET_SYMBOLS, BITS_PER_TS_POINT, breakpoints)
+from discretization.sax.abstract_sax import AbstractSAX, breakpoints
+from discretization.abstract_discretization import (
+    NUM_ALPHABET_SYMBOLS, BITS_PER_TS_POINT, _get_alphabet_symbols)
 
 
 # the value of the numerator of the variance function given in [1] for the
@@ -104,9 +105,7 @@ class OneDSAX(AbstractSAX):
 
         self.alphabet_size_slope = alphabet_size_slope
         self.bits_per_symbol_slope = math.ceil(np.log2(self.alphabet_size_slope))
-        symbols_slope = [chr(symbol) for symbol
-                         in range(ord('a'), ord('a') + self.alphabet_size_slope)]
-        self.alphabet_slope = np.array(symbols_slope)
+        self.alphabet_slope = np.array(_get_alphabet_symbols(self.alphabet_size_slope))
         self.var_slope = var_slope
         self.symbols_per_segment = 2
         # breakpoints for slope values of the segments are determined during

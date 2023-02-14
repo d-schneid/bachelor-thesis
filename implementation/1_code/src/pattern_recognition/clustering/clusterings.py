@@ -1,5 +1,4 @@
 from sklearn.cluster import KMeans, Birch, AffinityPropagation
-from sklearn.metrics import rand_score
 from approximation.paa import PAA
 from pattern_recognition.utils import get_linearized_encoded_sax
 from pattern_recognition.clustering.eval_metrics import (

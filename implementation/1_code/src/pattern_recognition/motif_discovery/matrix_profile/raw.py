@@ -85,12 +85,6 @@ def _build_motif(current_ts, fst_neigh, snd_neigh, max_distance, normalize, p):
     :param p: float
         The p-norm to apply for computing the Minkowski distance between two
         subsequences to check for their similarity.
-    :param start: np.array of shape (num_subsequences,)
-        The index of the start (inclusive) of each subsequence within the given
-        time series.
-    :param end: np.array of shape (num_subsequences,)
-        The index of the end (exclusive) of each subsequence within the given
-        time series.
     :return: list
         Contains the indexes of the start and end of the respective
         subsequences within the given time series that belong to this motif.

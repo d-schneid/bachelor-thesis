@@ -120,6 +120,7 @@ class IntervalMean(SymbolMapping):
                           in zip(lower_bounds, upper_bounds)]
         mapping = dict(zip(alphabet, interval_means))
         df_mapped = df_sax.replace(to_replace=mapping)
+
         return df_mapped
 
 

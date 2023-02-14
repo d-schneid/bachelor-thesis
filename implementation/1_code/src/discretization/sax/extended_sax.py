@@ -271,5 +271,5 @@ class ExtendedSAX(AbstractSAX):
         return df_e_sax
 
     def transform_to_symbolic_repr_histogram(self, df_paa, df_norm, window_size, df_breakpoints):
-        df_e_sax = self._transform_to_symbolic_repr_only(df_paa, df_norm, window_size, df_breakpoints)
+        df_e_sax = self.transform_to_symbolic_repr_only(df_paa, df_norm, window_size, df_breakpoints)
         return linearize_sax_word(df_e_sax, self.symbols_per_segment)

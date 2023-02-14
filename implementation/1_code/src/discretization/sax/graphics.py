@@ -324,12 +324,13 @@ def plot_compression_ratio_comparison(compression_ratios, alphabet_sizes):
            compression_ratios[keys[2]], width=bar_width, label=keys[2], edgecolor="black")
     ax.bar(np.arange(len(alphabet_sizes)) + (num_bars - 1) * bar_width * bar_space,
            compression_ratios[keys[3]], width=bar_width, label=keys[3], edgecolor="black")
+    ax.bar(np.arange(len(alphabet_sizes)) + num_bars * bar_width * bar_space,
+           compression_ratios[keys[4]], width=bar_width, label=keys[4], edgecolor="black")
 
     formatter = ticker.FuncFormatter(lambda x, pos: f"{x}%")
     ax.yaxis.set_major_formatter(formatter)
 
-    xticks_locations = (np.arange(len(alphabet_sizes)) + (num_bars - 2) * bar_width * bar_space / 2)\
-                       + (bar_width * bar_space) * (num_bars - 3) / 2
+    xticks_locations = np.arange(len(alphabet_sizes)) + (num_bars - 2) * bar_width * bar_space
     plt.xticks(xticks_locations, alphabet_sizes)
     ax.set_xlabel("Alphabet size")
 
