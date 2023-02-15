@@ -472,3 +472,15 @@ class AdaptiveSAX(SAX):
                                                   window_size=window_size,
                                                   df_breakpoints=df_breakpoints)
         return df_a_sax
+
+    def compute_breakpoints(self, df_norm):
+        """
+        Compute individual breakpoints for each time series based on the
+        k-means algorithm on the normalized time series points.
+
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The time series for that individual breakpoints shall be computed.
+        :return: dataframe of shape (num_breakpoints, num_ts)
+        """
+
+        return self.k_means(df_norm)

@@ -77,11 +77,22 @@ def _get_sax_subsequences(df_norm, len_subsequence, window_size, sax_variant, ga
     paa = PAA(window_size=window_size)
     df_paa_lst = [paa.transform(df_subsequences) for df_subsequences in df_subsequences_lst]
 
+    # needed for the discretization approaches that compute individual
+    # breakpoints for each time series (Persist, aSAX)
+    df_breakpoints = sax_variant.compute_breakpoints(df_norm)
+    df_breakpoints_lst = None
+    if df_breakpoints is not None:
+        # each subsequence of a time series shall be discretized based on the
+        # same breakpoints
+        df_breakpoints_lst = [pd.concat([df_breakpoints.iloc[:, i]] * num_subsequences, ignore_index=True, axis=1)
+                              for i in range(df_breakpoints.shape[1])]
+
     # treat subsequences as usual time series
     df_sax_lst = []
     for i in range(num_ts):
+        df_curr_breakpts = df_breakpoints_lst[i] if df_breakpoints_lst is not None else None
         df_sax = sax_variant.transform_to_symbolic_repr_only(df_paa=df_paa_lst[i], df_norm=df_subsequences_lst[i],
-                                                             window_size=window_size, df_breakpoints=None)
+                                                             window_size=window_size, df_breakpoints=df_curr_breakpts)
         df_sax_lst.append(df_sax)
 
     df_sax_lst = [linearize_sax_word(df_sax, sax_variant.symbols_per_segment)

@@ -277,3 +277,19 @@ class AbstractDiscretization(ABC):
         """
 
         return hist_binning.assign_histogram_bins(df_norm, self.alphabet)
+
+    def compute_breakpoints(self, df_norm):
+        """
+        Compute the breakpoints for discretization based on the original
+        normalized time series.
+        This is only needed for the Persist and the aSAX to compute the
+        breakpoints used for the subsequences in the Random Projection
+        algorithm for motif discovery.
+
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The time series data points for which the breakpoints shall be
+            computed.
+        :return: None
+        """
+
+        return None

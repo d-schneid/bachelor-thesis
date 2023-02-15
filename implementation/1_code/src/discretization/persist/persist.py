@@ -135,19 +135,18 @@ class Persist(AbstractDiscretization):
         self.max_alphabet_size = min_alphabet_size if max_alphabet_size is None else max_alphabet_size
         self.skip = 1 if skip is None else skip
 
-    def find_breakpoints(self, df_paa):
-        breakpoints, best_p_scores = do_persist(df_paa, self.min_alphabet_size,
-                                                self.max_alphabet_size, self.skip)
-
-        return breakpoints
-
     def transform(self, df_paa, df_norm, df_breakpoints=None, *args, **kwargs):
         if df_breakpoints is None:
-            df_breakpoints, best_p_scores = do_persist(df_norm, self.min_alphabet_size,
-                                                       self.max_alphabet_size, self.skip)
+            breakpoints, best_p_scores = do_persist(df_norm, self.min_alphabet_size,
+                                                    self.max_alphabet_size, self.skip)
+        else:
+            # for further uniform processing
+            breakpoints = [list(df_breakpoints.iloc[:, i])
+                           for i in range(df_breakpoints.shape[1])]
+
         symbolic_ts = []
         alphabets = []
-        for idx, curr_breakpoints in enumerate(df_breakpoints):
+        for idx, curr_breakpoints in enumerate(breakpoints):
             alphabet_idx = np.searchsorted(curr_breakpoints, df_paa.iloc[:, idx], side="right")
 
             # same number of breakpoints/alphabet for each time series
@@ -161,7 +160,7 @@ class Persist(AbstractDiscretization):
             symbolic_ts.append(pd.Series(alphabet[alphabet_idx]))
             alphabets.append(alphabet)
 
-        return pd.concat(symbolic_ts, axis=1), alphabets, df_breakpoints
+        return pd.concat(symbolic_ts, axis=1), alphabets, breakpoints
 
     def inv_transform(self, df_persist, ts_size, window_size, symbol_mapping,
                       alphabets, breakpoints, *args, **kwargs):
@@ -183,12 +182,12 @@ class Persist(AbstractDiscretization):
         return pd.concat(inv_persist_reprs, axis=1)
 
     def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):
-        df_persist, alphabets, df_breakpoints = self.transform(df_paa, df_norm, df_breakpoints)
+        df_persist, alphabets, breakpoints = self.transform(df_paa, df_norm, df_breakpoints)
         return self.inv_transform(df_persist, df_norm.shape[0], window_size,
-                                  **symbol_mapping, alphabets=alphabets, breakpoints=df_breakpoints)
+                                  **symbol_mapping, alphabets=alphabets, breakpoints=breakpoints)
 
     def transform_to_symbolic_ts(self, df_paa, df_norm, window_size, df_breakpoints=None):
-        df_persist, alphabets, df_breakpoints = self.transform(df_paa, df_norm, df_breakpoints)
+        df_persist, alphabets, breakpoints = self.transform(df_paa, df_norm, df_breakpoints)
         return interpolate_segments(df_persist, df_norm.shape[0], window_size)
 
     def transform_to_symbolic_repr_only(self, df_paa, df_norm, window_size, df_breakpoints):
@@ -196,3 +195,19 @@ class Persist(AbstractDiscretization):
                                                             window_size=window_size,
                                                             df_breakpoints=df_breakpoints)
         return df_persist
+
+    def compute_breakpoints(self, df_norm):
+        """
+        Compute individual breakpoints for each time series based on the
+        Persist algorithm on the normalized time series points.
+        This method should only be used if
+        'self.min_alphabet_size' == 'self.max_alphabet_size'.
+
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The time series for that individual breakpoints shall be computed.
+        :return: dataframe of shape (num_breakpoints, num_ts)
+        """
+
+        breakpoints, best_p_scores = do_persist(df_norm, self.min_alphabet_size,
+                                                self.max_alphabet_size, self.skip)
+        return pd.DataFrame(zip(*breakpoints))
