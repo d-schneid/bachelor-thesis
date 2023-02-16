@@ -456,6 +456,7 @@ class AdaptiveSAX(SAX):
                                                  ts_size, window_size,
                                                  symbol_mapping, idx)
             inv_a_sax_reprs.append(df_inv_a_sax)
+
         return pd.concat(inv_a_sax_reprs, axis=1)
 
     def transform_inv_transform(self, df_paa, df_norm, window_size, df_breakpoints=None, **symbol_mapping):

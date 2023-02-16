@@ -10,8 +10,17 @@ NUM_ALPHABET_SYMBOLS = 26
 BITS_PER_TS_POINT = 64
 
 
-def _get_alphabet_symbols(alphabet_size):
-    return [chr(symbol) for symbol in range(ord('a'), ord('a') + alphabet_size)]
+def _get_alphabet(alphabet_size):
+    """
+    Compute the alphabet based on its size. The computed alphabet contains
+    symbols of type 'str' starting from 'a'.
+
+    :param alphabet_size: int
+        The size (i.e. number of symbols) that the alphabet shall have.
+    :return: np.array
+    """
+
+    return np.array([chr(symbol) for symbol in range(ord('a'), ord('a') + alphabet_size)])
 
 
 class AbstractDiscretization(ABC):
@@ -22,7 +31,7 @@ class AbstractDiscretization(ABC):
                              f"1 (inclusive) and {NUM_ALPHABET_SYMBOLS} (inclusive)")
         self.alphabet_size = alphabet_size
         self.bits_per_symbol = math.ceil(np.log2(self.alphabet_size))
-        self.alphabet = np.array(_get_alphabet_symbols(self.alphabet_size))
+        self.alphabet = _get_alphabet(self.alphabet_size)
         self.symbols_per_segment = 1
 
     @abstractmethod

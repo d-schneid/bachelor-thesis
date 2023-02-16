@@ -9,7 +9,7 @@ from discretization.symbol_mapping import ValuePoints, IntervalNormMedian
 from discretization.sax.sax import SAX
 from discretization.sax.abstract_sax import AbstractSAX, breakpoints
 from discretization.abstract_discretization import (
-    NUM_ALPHABET_SYMBOLS, BITS_PER_TS_POINT, _get_alphabet_symbols)
+    NUM_ALPHABET_SYMBOLS, BITS_PER_TS_POINT, _get_alphabet)
 
 
 # the value of the numerator of the variance function given in [1] for the
@@ -105,7 +105,7 @@ class OneDSAX(AbstractSAX):
 
         self.alphabet_size_slope = alphabet_size_slope
         self.bits_per_symbol_slope = math.ceil(np.log2(self.alphabet_size_slope))
-        self.alphabet_slope = np.array(_get_alphabet_symbols(self.alphabet_size_slope))
+        self.alphabet_slope = _get_alphabet(self.alphabet_size_slope)
         self.var_slope = var_slope
         self.symbols_per_segment = 2
         # breakpoints for slope values of the segments are determined during

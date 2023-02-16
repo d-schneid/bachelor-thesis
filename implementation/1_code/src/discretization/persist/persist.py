@@ -4,7 +4,7 @@ import pandas as pd
 
 from utils import interpolate_segments
 from discretization.symbol_mapping import IntervalNormMedian
-from discretization.abstract_discretization import AbstractDiscretization, _get_alphabet_symbols
+from discretization.abstract_discretization import AbstractDiscretization, _get_alphabet
 from discretization.persist.persistence_score import _compute_persistence_score
 
 
@@ -119,23 +119,79 @@ def do_persist(df_norm, min_alphabet_size, max_alphabet_size, skip):
 
 
 class Persist(AbstractDiscretization):
+    """
+    Persist discretization algorithm for time series.
 
-    def __init__(self, min_alphabet_size, max_alphabet_size=None, skip=None):
+    :param min_alphabet_size: int
+        The minimum alphabet size (inclusive) that shall be used to find
+        discretization intervals.
+    :param max_alphabet_size: int (default = None)
+        The maximum alphabet size (inclusive) that shall be used to find
+        discretization intervals.
+        If None, this will be equal to 'min_alphabet_size'.
+    :param skip: int (default = 4)
+        The number of breakpoints that shall be ignored for consideration on
+        the left and right side of a found breakpoint.
+    :raises:
+        ValueError: If 'min_alphabet_size' is above 26 or below 1.
+        ValueError: If 'min_alphabet_size' > 'max_alphabet_size'.
+        ValueError: If 'skip' < 0.
+
+    References
+    ----------
+    [1] Mörchen, Fabian, and Alfred Ultsch. "Optimizing time series
+    discretization for knowledge discovery." Proceedings of the eleventh ACM
+    SIGKDD international conference on Knowledge discovery in data mining.
+    2005.
+    """
+
+    def __init__(self, min_alphabet_size, max_alphabet_size=None, skip=4):
         if max_alphabet_size is not None:
             if min_alphabet_size > max_alphabet_size:
                 raise ValueError("The maximum alphabet size needs to be at "
                                  "least as large as the minimum alphabet size.")
-        if skip is not None:
-            if skip < 1:
-                raise ValueError("The 'skip' needs to be at least 1.")
+        if skip < 0:
+            raise ValueError("The 'skip' needs to be at least 0.")
 
         super().__init__(alphabet_size=min_alphabet_size)
         self.name = "Persist"
         self.min_alphabet_size = min_alphabet_size
         self.max_alphabet_size = min_alphabet_size if max_alphabet_size is None else max_alphabet_size
-        self.skip = 1 if skip is None else skip
+        self.skip = skip
 
     def transform(self, df_paa, df_norm, df_breakpoints=None, *args, **kwargs):
+        """
+        Transform the PAA representation of each time series into its Persist
+        representation (i.e. assign each PAA representation its respective
+        Persist word).
+
+        :param df_paa: dataframe of shape (num_segments, num_ts)
+            The PAA representations of a time series dataset that shall be
+            transformed into their Persist representations.
+        :param df_norm: dataframe of shape (ts_size, num_ts)
+            The original normalized time series dataset corresponding to the
+            given PAA representations.
+        :param df_breakpoints: dataframe of shape (num_breakpoints, num_ts) (default = None)
+            The individual breakpoints for each given PAA representation that
+            shall be used to transform the respective PAA representation into
+            its Persist representation.
+            If None, the respective breakpoints resulting from the Persist
+            algorithm on 'df_norm' are used.
+            This parameter is intended to allow breakpoints based on the sole
+            computation of the Persist algorithm before this transformation.
+            For example, to run the Persist algorithm on 'df_paa' instead of
+            'df_norm'.
+        :return:
+            dataframe of shape (num_segments, num_ts):
+                The Persist representation for each time series.
+            alphabets: list of len = num_ts
+                Contains the computed alphabet for each time series as a
+                np.array.
+            breakpoints: list of len = num_ts
+                Contains the respective breakpoints, either computed or given,
+                for each time series as a list.
+        """
+
         if df_breakpoints is None:
             breakpoints, best_p_scores = do_persist(df_norm, self.min_alphabet_size,
                                                     self.max_alphabet_size, self.skip)
@@ -144,7 +200,7 @@ class Persist(AbstractDiscretization):
             breakpoints = [list(df_breakpoints.iloc[:, i])
                            for i in range(df_breakpoints.shape[1])]
 
-        symbolic_ts = []
+        persist_ts = []
         alphabets = []
         for idx, curr_breakpoints in enumerate(breakpoints):
             alphabet_idx = np.searchsorted(curr_breakpoints, df_paa.iloc[:, idx], side="right")
@@ -155,15 +211,39 @@ class Persist(AbstractDiscretization):
             # time series can have different number of breakpoints/alphabets
             else:
                 alphabet_size = len(curr_breakpoints) + 1
-                alphabet = np.array(_get_alphabet_symbols(alphabet_size))
+                alphabet = _get_alphabet(alphabet_size)
 
-            symbolic_ts.append(pd.Series(alphabet[alphabet_idx]))
+            persist_ts.append(pd.Series(alphabet[alphabet_idx]))
             alphabets.append(alphabet)
 
-        return pd.concat(symbolic_ts, axis=1), alphabets, breakpoints
+        return pd.concat(persist_ts, axis=1), alphabets, breakpoints
 
     def inv_transform(self, df_persist, ts_size, window_size, symbol_mapping,
                       alphabets, breakpoints, *args, **kwargs):
+        """
+        Approximate the original time series dataset by transforming its
+        Persist representations into a time series dataset with the same size
+        by assigning each point the symbol value of its segment based on the
+        individual breakpoints of each Persist representation.
+
+        :param df_persist: dataframe of shape (num_segments, num_ts)
+            The Persist representation of the time series dataset.
+        :param ts_size: int
+            The size of the original time series.
+        :param window_size: int
+            The size of the segments with which the given Persist
+            representations were created.
+        :param symbol_mapping: SymbolMapping
+            The symbol mapping strategy that determines the symbol values for
+            the Persist symbols.
+        :param alphabets: list of len = num_ts
+            Contains the computed alphabet for each time series as a np.array.
+        :param breakpoints: list of len = num_ts
+            Contains the respective breakpoints, either computed or given, for
+            each time series as a list.
+        :return: dataframe of shape (ts_size, num_ts)
+        """
+
         if isinstance(symbol_mapping, IntervalNormMedian):
             warnings.warn("Use the chosen 'symbol_mapping' strategy with "
                           "caution, because in the Persist, the breakpoint "
@@ -172,10 +252,10 @@ class Persist(AbstractDiscretization):
 
         inv_persist_reprs = []
         for idx in range(df_persist.shape[1]):
-            current_ts = df_persist.iloc[:, idx].to_frame()
-            current_breakpoints = np.array(breakpoints[idx])
-            current_alphabet = np.array(alphabets[idx])
-            df_mapped = symbol_mapping.get_mapped(current_ts, current_alphabet, current_breakpoints, idx)
+            curr_persist_ts = df_persist.iloc[:, idx].to_frame()
+            curr_breakpoints = np.array(breakpoints[idx])
+            curr_alphabet = np.array(alphabets[idx])
+            df_mapped = symbol_mapping.get_mapped(curr_persist_ts, curr_alphabet, curr_breakpoints, idx)
             df_inv_persist = interpolate_segments(df_mapped, ts_size, window_size)
             inv_persist_reprs.append(df_inv_persist)
 
