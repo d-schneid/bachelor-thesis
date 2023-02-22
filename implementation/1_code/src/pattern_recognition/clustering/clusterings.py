@@ -7,7 +7,7 @@ from pattern_recognition.clustering.eval_metrics import (
 
 class TimeSeriesClusteringMixin:
 
-    def fit_discretized_encoded(self, df_norm, window_size, sax_variant):
+    def fit_discretized_encoded(self, df_norm, window_size, sax_variant, df_breakpoints=None):
         """
         Compute the respective clustering from the discretized and encoded time
         series dataset.
@@ -26,7 +26,8 @@ class TimeSeriesClusteringMixin:
             The respective fitted clustering estimator.
         """
 
-        df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size, sax_variant)
+        df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size,
+                                                                       sax_variant, df_breakpoints)
         # transpose to align with sklearn
         return super().fit(df_sax_linearized_encoded.T)
 

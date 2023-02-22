@@ -8,7 +8,7 @@ from pattern_recognition.utils import get_linearized_encoded_sax
 
 class TimeSeriesClassifierMixin:
 
-    def fit_discretized_encoded(self, df_norm, class_labels, window_size, sax_variant):
+    def fit_discretized_encoded(self, df_norm, class_labels, window_size, sax_variant, df_breakpoints=None):
         """
         Fit the respective classifier from the discretized and encoded time
         series training dataset.
@@ -30,7 +30,8 @@ class TimeSeriesClassifierMixin:
             The respective fitted classifier.
         """
 
-        df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size, sax_variant)
+        df_sax_linearized_encoded, df_sax = get_linearized_encoded_sax(df_norm, window_size,
+                                                                       sax_variant, df_breakpoints)
         # transpose to align with sklearn
         return super().fit(df_sax_linearized_encoded.T, class_labels)
 

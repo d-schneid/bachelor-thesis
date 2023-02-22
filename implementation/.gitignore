@@ -175,6 +175,7 @@ cython_debug/
 
 # own
 0_data/
+2_experiments/
 3_output/
 Lib/
 Scripts/
