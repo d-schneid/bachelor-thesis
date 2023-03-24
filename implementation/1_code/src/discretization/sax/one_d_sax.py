@@ -33,6 +33,10 @@ def compute_slopes(df_norm, window_size):
         dataframe of shape (num_segments, num_ts)
     """
 
+    if window_size == 1:
+        raise ValueError("'window_size' must be greater than 1, because the "
+                         "slope of a single point is not defined.")
+
     ts_size = df_norm.shape[0]
     start, end, num_segments = constant_segmentation(ts_size, window_size)
     time_means = pd.DataFrame(data=[np.mean(range(start, end))

@@ -1,0 +1,44 @@
+\subsection{Criticism - Assumption of Standard Normal Distribution}
+For the \ac{SAX}, \ac{eSAX}, and \ac{1d-SAX}, there are two problems in connection with the assumption that the original time series follows the standard normal distribution $\mathcal{N}(0,1)$ after applying standardization.
+\subsection*{Myth about Time Series Standardization}
+The first problem relates to the statement from the literature that a time series follows the standard normal distribution after applying standardization, regardless of the distribution of the corresponding non-standardized time series \cite{SAX_Lin}. The argumentation for this statement is based on an illustration of normal probability plots for eight selected different time series with a length of 128 points each. But, examining standardized time series from the UCR Time Series Classification Archive \cite{UCR_Archive} by testing them for the standard normal distribution based on a statistical test contradicts this statement (see Table \ref{tab:shapiro_UCR}). Thus, this statement is not true. However, given that a non-standardized time series follows a Gaussian distribution, it is proofed that the corresponding standardized time series follows the standard normal distribution \cite{Standardization}.
+\begin{table}[htb]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Training Dataset} & \textbf{Number} & \textbf{Length} & \textbf{Fraction} \\ \hline
+SmoothSubspace & 150 & 15 & 0.23 \\
+SyntheticControl & 300 & 60 & 0.56 \\
+SonyAIBORobotSurface1 & 20 & 70 & 0.60 \\
+FordB & 3636 & 500 & 0.64 \\
+ItalyPowerDemand & 67 & 24 & 0.66 \\
+FordA & 3601 & 500 & 0.66 \\ 
+FaceAll & 560 & 131 & 0.73 \\
+Crop & 7200 & 46 & 0.74 \\
+FacesUCR & 200 & 131 & 0.76 \\
+Plane & 105 & 144 & 0.84 \\
+SonyAIBORobotSurface2 & 27 & 65 & 0.85 \\
+SwedishLeaf & 500 & 128 & 0.88 \\
+OSULeaf & 200 & 427 & 0.96 \\ \hline
+\end{tabular}
+\vspace*{0.5cm}
+\caption[UCR Time Series - Testing for Standard Normal Distribution]{For each training dataset from the UCR Time Series Classification Archive \cite{UCR_Archive} that contains equal-length time series of $\leq 5000$ points, the standardized time series are tested to follow the standard normal distribution with the Shapiro-Wilk test. Based on this test, this table shows the fraction of standardized time series in each training dataset for that the null hypothesis to follow the standard normal distribution can be rejected, based on a p-value of < 0.05. The 100 remaining examined training datasets where this fraction is $\geq$ 0.99 are omitted for brevity. All in all, based on the employed Shapiro-Wilk test, 51,745 out of 61,953 examined time series do not follow the standard normal distribution after applying standardization.}
+\label{tab:shapiro_UCR}
+\end{table}
+\subsection*{Effect of the \ac{PAA}} \label{effect_paa}
+Remember that for a window length of $w > 1$, not the original standardized time series points are discretized in the \ac{SAX}, \ac{eSAX}, and \ac{1d-SAX}. Instead, features like the mean of the points of subsequences that are extracted by the (modified) \ac{PAA} are discretized. This implies the second problem, that the computation of the breakpoints is only based on the assumption that the original standardized time series follows the standard normal distribution. However, the distribution of the features extracted by the (modified) \ac{PAA} should also be considered (see Figure \ref{fig:paa_effect}) \cite{SAX_Criticism}.
+\newpage 
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{discretization/gaussian_criticism/paa_effect.pdf}
+\caption[Distribution of Means Extracted by the PAA]{For the creation of this figure, the \ac{PAA} is applied with different window lengths on 5,000 time series points drawn from the standard normal distribution $\mathcal{N}(0,1)$ \cite{SAX_Criticism}. The corresponding distributions of the means extracted by the \ac{PAA} are examined. The three plotted histograms along with the summary statistics in the upper left plot show that these extracted means approximately follow a Gaussian distribution with a mean of zero and a standard deviation < 1 \cite{SAX_Criticism}. Moreover, the standard deviation decreases with an increasing window length. Thus, these means extracted by the \ac{PAA} do not follow the standard normal distribution.}
+\label{fig:paa_effect}
+\end{figure}
+\subsection*{Impact on Discretization}
+Since it is the extracted features by the (modified) \ac{PAA} that are discretized, their distributions directly effect the distribution of the alphabet symbols in the discretized time series \cite{SAX_Criticism}. For example, given the distribution of the means extracted by the \ac{PAA} from a standardized time series that follows the standard normal distribution, the corresponding discretized time series will not contain each alphabet symbol with the same probability (see Figure \ref{fig:symbol_distr}) \cite{SAX_Criticism}. This contradicts the statement from the literature that the computed breakpoints for discretizing the extracted means in the \ac{SAX}, \ac{eSAX}, and \ac{1d-SAX} imply equi-probable alphabet symbols in the corresponding discretized time series \cite{SAX_Lin}. The assumption that would need to hold for this statement is not that the points of the original standardized time series follow the standard normal distribution, but the means extracted by the \ac{PAA} \cite{SAX_Criticism}.
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{discretization/gaussian_criticism/symbol_distr.pdf}
+\caption[Distribution of Alphabet Symbols in the Discretized Time Series]{For the creation of this figure, the \ac{PAA} is applied with window lengths of $w = 1$, $w = 5$, and $w = 10$ on 5,000 time series points drawn from the standard normal distribution $\mathcal{N}(0,1)$ \cite{SAX_Criticism}. The means extracted by the \ac{PAA} are discretized based on the breakpoints computed by the \ac{SAX}, \ac{eSAX}, and \ac{1d-SAX} for an alphabet size of $a = 4$. The resulting distributions of the alphabet symbols are shown in the three plotted histograms. For a window length of $w = 1$, the alphabet symbols are equi-probable distributed, since the examined time series follows the standard normal distribution. However, for an increasing window length, the alphabet symbols are more concentrated on the two middle alphabet symbols \cite{SAX_Criticism}. This also reflects the decreasing standard deviation of the distribution of the corresponding extracted means for an increasing window length.}
+\label{fig:symbol_distr}
+\end{figure}

@@ -13,6 +13,21 @@
 \usepackage{multicol}
 \usepackage{ragged2e}
 \usepackage{verbatim}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[nameinlink]{cleveref}
+\usepackage{graphicx}
+\usepackage[printonlyused]{acronym} % list of acronyms
+\usepackage{algorithmic}
+% \usepackage{algorithm}
+\numberwithin{algocf}{chapter}
+\renewcommand{\thealgocf}{\thechapter.\arabic{algocf}}
+\SetAlCapSkip{2ex}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage{booktabs}
+\usepackage{siunitx}
+\setbool{@fleqn}{false} % equations shall be centered
 \newcolumntype{K}[1]{>{\centering\arraybackslash}m{#1}}
 \newcolumntype{P}[1]{>{\RaggedRight\hspace{0pt}}p{#1}}
 \newcolumntype{P}[1]{>{\centering\arraybackslash}p{#1}}
@@ -24,12 +39,16 @@
 	\tableofcontents{}
 	\listoffigures {}
 	\listoftables {}
+	\input{01_texfiles/acronyms}
+	\listofalgorithms
 \cleardoublepage	
 \pagenumbering{arabic}
 	\pagestyle{headings}
-			\input{01_texfiles/Kapitel_Einleitung}
+			%\input{01_texfiles/Kapitel_Einleitung}
 			%\input{03_texfiles/Kapitel_Projektmanagement}
-			\input{01_texfiles/Kapitel_MathematischeGrundlagen}
+			%\input{01_texfiles/Kapitel_MathematischeGrundlagen}
+			\input{01_texfiles/discretization/intro}
+			\input{01_texfiles/evaluation/intro}
 \printbibliography
 
 \end{document}

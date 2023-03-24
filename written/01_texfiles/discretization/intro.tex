@@ -1,0 +1,47 @@
+\chapter{Time Series Discretization} \label{chap:ts_discretization}
+One property of time series is that they are high-dimensional data. This means that the number of time series points is too large to define data mining algorithms that work directly on the original time series, since their processing time would be intractable \cite{Survey_Esling}. As an example, consider that a day has 86,400 seconds. A sensor measurement every second would thus result in 86,400 time series points per day. This would add up to over 31 million time series points when measuring every day in a year. \newline
+Therefore, algorithms are needed that transform time series into a representation with a reduced number of points while preserving their essential characteristics like extrema, anomalies and repeated patterns. Taking such a representation as the input for data mining algorithms would not only reduce the processing time, since it should meet all of the following requirements \cite{Survey_Esling}:
+\vspace{-3pt}
+\begin{enumerate}[itemsep=-10pt]
+\item reduction of the number of time series points
+\item extraction of the essential characteristics of the time series
+\item computation of the representation with a lower processing time compared to the data mining algorithms
+\item reconstruction of the original time series from the representation with high quality based on reconstruction error measures
+\item implicit noise removal or insensitivity to noise
+\end{enumerate}
+\vspace{-3pt}
+A representation that tries to meet these requirements is obtained by discretizing the original time series \cite{Survey_Temporal_Discretization}. The basic idea of such a discretization involves dividing the amplitude of the original time series into intervals based on breakpoints that are set at computed values along the amplitude. The discretized representation is then obtained by assigning each time series point to its respective interval and representing all points within an interval with the discrete value that is assigned to the interval (see Figure \ref{fig:time_series_discretization}).
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{discretization/discretization.pdf}
+\caption[Time Series Discretization - Basic Idea]{As an example, the amplitude of the plotted original time series is divided into four discretization intervals based on three breakpoints. The plotted discretization intervals are assigned the Latin letters \textcolor{red}{a}, \textcolor{red}{b}, \textcolor{red}{c}, and \textcolor{red}{d} as discrete values. For instance, all points of the original time series that are located in the \textcolor{red}{a}-discretization interval are assigned \textcolor{red}{a} to obtain the discretized representation of the original time series. The resulting discretized representation is then obtained by concatenating these discrete values in order of time the corrsponding points occur in the original time series \cite{Survey_Temporal_Discretization}: \textcolor{red}{b}\textcolor{red}{c}\textcolor{red}{c}\textcolor{red}{b}\textcolor{red}{d}...\textcolor{red}{a}\textcolor{red}{a}\textcolor{red}{a}\textcolor{red}{a}\textcolor{red}{a}...\textcolor{red}{b}\textcolor{red}{b}\textcolor{red}{b}\textcolor{red}{b}\textcolor{red}{b}.}
+\label{fig:time_series_discretization}
+\end{figure}
+\input{01_texfiles/discretization/paa}
+\section{Fixed-breakpoints Discretization}
+The following three time series discretization algorithms all assume that the original time series that shall be discretized follow the standard normal distribution $\mathcal{N}(0,1)$ after applying standardization \cite{SAX_Lin}. Based on this assumption, the breakpoints that define the discretization intervals along the amplitude of the time series are computed by the quantiles of the standard normal distribution \cite{SAX_Lin}. Thus, given a fixed number of discretization intervals to be used, all time series are discretized based on the same breakpoints. Therefore, the breakpoints are not adaptive to the time series data at hand, which is the reason the following three discretization algorithms are classified into fixed-breakpoints discretization.
+\input{01_texfiles/discretization/sax}
+\input{01_texfiles/discretization/e_sax}
+\input{01_texfiles/discretization/one_d_sax}
+\input{01_texfiles/discretization/gaussian_criticism}
+\pagebreak
+\section{Adaptive-breakpoints Discretization}
+Compared to the fixed-breakpoints discretization algorithms, the following two time series discretization algorithms do not assume that the original standardized time series that shall be discretized follow the standard normal distribution. Even more, they do not make any assumption about the distribution the time series follow \cite{A_SAX, Persist}. Therefore, they do not compute the breakpoints that define the discretization intervals based on the quantiles of a distribution, but compute them intrinsically based on the time series data at hand \cite{A_SAX, Persist}. Thus, given a fixed number of discretization intervals to be used, the time series are discretized based on individual breakpoints that are adapted to their data. This is the reason why the following two discretization algorithms are classified into adaptive-breakpoints discretization.
+\input{01_texfiles/discretization/a_sax}
+\input{01_texfiles/discretization/persist}
+\section{Classifying Summary}
+Based on the characteristics of the presented time series discretization algorithms, they can be classified along two dimensions (see Figure \ref{fig:summary}). The first dimension is defined by the way the breakpoints defining the discretization intervals are computed. As described, the presented time series discretization algorithms can be classified into fixed-breakpoints and adaptive-breakpoints discretization. The second dimension is defined by the features of the original standardized time series that are discretized by the algorithms. All in all, there are four presented features that are extracted by the (modified) \ac{PAA}: the slope, mean, minimum, and maximum of the points of the subsequences of the original standardized time series.
+\newpage
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{discretization/summary/classification.pdf}
+\caption[Time Series Discretization Algorithms - Classifying Summary]{This is a classifying summary of the presented time series discretization algorithms based on their charactersistics along two dimensions. Remember that for the Persist, the discretization can also be interpreted as discretizing the means extracted by the \ac{PAA} based on a window length of $w = 1$.}
+\label{fig:summary}
+\end{figure}
+
+
+
+
+
+
+

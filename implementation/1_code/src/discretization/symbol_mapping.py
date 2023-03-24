@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 import pandas as pd
 from abc import ABC, abstractmethod
@@ -171,10 +172,20 @@ class ValuePoints(SymbolMapping):
         alphabet_idx = np.searchsorted(breakpoints, col_data, side="right")
         symbol_values = self.get_symbol_values(col_data.groupby(by=alphabet_idx))
 
-        if len(symbol_values) < len(alphabet):
-            raise AssertionError("There is a breakpoint interval that "
-                                 "does not contain any time series point. "
-                                 "Adapt to use less intervals.")
+        #if len(symbol_values) < len(alphabet):
+        #    warnings.warn("There is a breakpoint interval that does not "
+        #                  "contain any time series point. Fallback to "
+        #                  "IntervalMean for that breakpoint interval.")
+        max_index = alphabet.size - 1
+        missing_symbols = set(range(max_index + 1)) - set(symbol_values.index)
+        for i in missing_symbols:
+            if i == 0:
+                symbol_values.loc[i] = (col_data.min() + breakpoints[i]) / 2
+            elif i == max_index:
+                symbol_values.loc[i] = (breakpoints[i-1] + col_data.max()) / 2
+            else:
+                symbol_values.loc[i] = (breakpoints[i-1] + breakpoints[i]) / 2
+        symbol_values = symbol_values.sort_index()
 
         mapping = {}
         for alphabet_idx, symbol_value in symbol_values.items():
