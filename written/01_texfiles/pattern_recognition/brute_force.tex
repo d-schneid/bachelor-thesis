@@ -1,0 +1,42 @@
+\section{Brute Force} \label{description_brute_force}
+Let $X = x_1, ..., x_N$ be a standardized time series of length $N \geq 1$. The first two steps of the Brute Force motif discovery algorithm are the same as for the Matrix Profile motif discovery algorithm described above. Therefore, let $\hat{X}^e$ be the encoded discretized time series that results from applying the encoding on each alphabet symbol that represents the discretized time series $\hat{X}$. \newline
+The next step is to extract subsequences of $\hat{X}^e$ with an overlapping sliding window of a given length $l \geq 1$ \cite{Motif_Definitions}. Analogous to the reasoning for the Matrix Profile motif discovery algorithm described above, extracted subsequences of $\hat{X}^e$ should start at a point in time that is divisable by two respectively three when $\hat{X}$ was discretized based on the \ac{1d-SAX} respectively \ac{eSAX}, assuming that for $\hat{X}^e$ the points in time start at zero. Also, $l$ should be divisible by two respectively three. \newline
+The extracted subsequences of $\hat{X}^e$ are then used as the input for \mbox{Algorithm \ref{alg:brute_force}} \cite{Motif_Definitions}. For each of those, this algorithm collects all extracted subsequences of $\hat{X}^e$ that fulfill the match()-predicate in line 6 of Algorithm \ref{alg:brute_force}. It then returns the largest collection of such subsequences, which is called a motif. Algorithm \ref{alg:brute_force} is invoked iteratively as long as a motif that contains at least two subsequences is found, since all subsequences that are already included in a motif cannot be selected for future motifs. When Algorithm \ref{alg:brute_force} does not find a motif anymore, the subsequences of $X$ that correspond to the found motifs can be retrieved. \newline
+The match()-predicate in line 6 of Algorithm \ref{alg:brute_force} iteratively compares the currently selected subsequence with all inputted subsequences \cite{Motif_Definitions}. Let $S_1$ and $S_2$ be two subsequences of $\hat{X}^e$ that shall be compared. Then, the match()-predicate first checks if $D(S_1,S_2) \leq r$ holds, where $D$ is a given Minkowski distance and $r \geq 0$ is a given similarity distance. If this first check is passed, it then compares each pair of corresponding encoded alphabet symbols in $S_1$ and $S_2$ at the same point in time. For each of these pairs, it checks if their absolute difference is not too large based on a given threshold $abs \textunderscore diff \geq 0$. For the last check, the match()-predicate checks if $H(S_1,S_2) \leq h$ holds, where $H$ is the Hamming distance and $h \geq 0$ is a given threshold. \newline
+\SetKw{In}{in}
+\begin{center}
+\begin{algorithm}[H]
+  \SetAlgoLined
+  \LinesNumbered
+  \DontPrintSemicolon
+  \KwIn{\text{subsequences} \tcp*[f]{extracted subsequences of $\hat{X}^e$} \newline
+  		\text{thresholds for match()-predicate in line 6}}
+  \KwOut{\text{largest\_motif}}
+  
+  \text{largest\_motif} $\leftarrow ()$\;
+  \text{largest\_count} $\leftarrow 0$\;
+  
+  \For{\upshape \text{curr\_subsequence} \In \text{subsequences}}{
+  	\text{curr\_motif} $\leftarrow ()$\;
+  	\For{\upshape \text{subsequence} \In \text{subsequences}}{
+  		\If{\upshape \text{match(curr\_subsequence, subsequence)}}{
+			\text{curr\_motif.add(subsequence)}\;
+  		}
+  	}
+  	\If{\upshape \text{curr\_motif.size() > largest\_count}}{
+  		\text{largest\_motif} $\leftarrow$ \text{curr\_motif}\;
+		\text{largest\_count} $\leftarrow$ \text{curr\_motif.size()}\;
+  	}
+  }
+  \text{return largest\_motif}\;
+  
+  \caption[Brute Force Motif Discovery - Algorithm]{This brute force algorithm fixes one of the inputted subsequences in each iteration and employs a nested loop over all inputted subsequences \cite{Motif_Definitions}. It finds the largest collection from the inputted subsequences that fulfill the match()-predicate in line 6 with respect to the corresponding fixed subsequence.}
+  \label{alg:brute_force}
+\end{algorithm}
+\end{center}
+
+
+
+
+
+

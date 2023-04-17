@@ -45,7 +45,7 @@ def _remove_trivial(motif, exclusion_zone):
         given motif that shall be excluded from motif discovery.
     :return:
         cleaned_motif: list
-            The given motif with trivial mathces removed.
+            The given motif with trivial matches removed.
         trivial:
             The indexes that are in the exclusion zones of the indexes in
             'cleaned_motif'.

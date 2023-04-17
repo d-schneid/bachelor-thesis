@@ -3,6 +3,7 @@ from scipy.spatial import distance
 
 from utils import constant_segmentation_overlapping
 from pattern_recognition.motif_discovery.matrix_profile.shared import _find_nearest_neighs
+from pattern_recognition.motif_discovery.utils import _remove_trivial
 
 
 """
@@ -154,7 +155,7 @@ def _is_motif(current_ts, idxs, assigned, max_distance, p, start, end):
     return True, fst_neigh, snd_neigh
 
 
-def _build_ts_motifs(current_ts, nearest_neighs, max_distance, normalize, p, start, end):
+def _build_ts_motifs(current_ts, nearest_neighs, max_distance, normalize, p, start, end, exclusion_zone):
     """
     Compute all motifs of the given time series.
 
@@ -201,15 +202,17 @@ def _build_ts_motifs(current_ts, nearest_neighs, max_distance, normalize, p, sta
         fst_neigh, snd_neigh = new_motif[1], new_motif[2]
         motif = _build_motif(current_ts, fst_neigh, snd_neigh, max_distance,
                              normalize, p)
+        motif.sort()
+        motif, trivial = _remove_trivial(motif, exclusion_zone)
+        assigned.update(trivial)
         if motif:
-            motif.sort()
             ts_motifs.append(motif)
             assigned.update(motif)
 
     return ts_motifs
 
 
-def do_matrix_profile_raw(df_norm, len_subsequence, max_distance, normalize=False, p=1.0, gap=1):
+def do_matrix_profile_raw(df_norm, len_subsequence, max_distance, exclusion_zone, normalize=False, p=1.0, gap=1):
     """
     Execute the algorithm based on the computation of the Matrix Profile for
     motif discovery in a time series based on its subsequences.
@@ -262,7 +265,7 @@ def do_matrix_profile_raw(df_norm, len_subsequence, max_distance, normalize=Fals
     for idx, nearest_neighs in enumerate(nearest_neighs_lst):
         current_ts = df_norm.iloc[:, idx]
         # build up motifs based nearest neighbors
-        ts_motifs = _build_ts_motifs(current_ts, nearest_neighs, max_distance, normalize, p, start, end)
+        ts_motifs = _build_ts_motifs(current_ts, nearest_neighs, max_distance, normalize, p, start, end, exclusion_zone)
         motifs_lst.append(ts_motifs)
 
     return motifs_lst, start, end

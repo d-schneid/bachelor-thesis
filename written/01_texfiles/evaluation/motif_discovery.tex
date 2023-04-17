@@ -1,2 +1,313 @@
-\subsection{Goodness of Motif Discovery}
-bla
+\section{Motif Discovery}
+Compared to the abundance of ground truth data for evaluating time series classification algorithms (e.g. UCR Time Series Classification Archive \cite{UCR_Archive}), there is a lack of ground truth benchmark datasets for experimentally evaluating motif discovery algorithms. Therefore, it is necessary to construct synthetic time series data that contain recurrently occurring subsequences with corresponding labels to be able to experimentally evaluate motif discovery algorithms.  
+\subsection*{Datasets Used for Experimental Evaluation}
+For the experimental evaluation, two synthetic datasets were used. Each dataset contains 40 time series with varying length. For the construction of such a time series, 11 or 12 subsequences of fixed length were first created by applying a random walk with a random step size and a minimum and maximum value \cite{Diss_VW}. Then, a varying number of copies of each of these created subsequences were selected and noise was added to each copy. Lastly, these noisy copies were concatenated in a random order by applying a random walk of varying length between each two noisy copies to obtain the final time series \cite{Diss_VW}. \newline
+The constructed datasets are labeled \texttt{Motif60} and \texttt{Motif120}, which contain time series that are constructed based on noisy copies of subsequences of length 60 and 120, respectively. All in all, \texttt{Motif60} contains time series of lengths between 6,400 and 8,200, while \texttt{Motif120} contains time series of lengths between 11,200 and 14,000. \newline
+For each time series, the noisy copies of the same subsequence represent a recurrently occurring subsequence that shall be discovered by a motif discovery algorithm. To conduct the experimental evaluation, all time series points that belong to a common recurrently occurring subsequence are given the same label \cite{Diss_VW}. Moreover, those time series points that were created by the random walk are also labeled accordingly \cite{Diss_VW}. \newline
+All time series were standardized before performing the experimental evaluation.
+\subsection*{Measuring the Goodness of Motif Discovery}
+Let $X = x_1, ..., x_N$ be a standardized time series from one of the datasets used for experimental evaluation with a length of $N \geq 1$ that contains $R \geq 1$ recurrently occurring subsequences. Moreover, let $T = t_1, ..., t_N$ be the corresponding points in time. Define $I := \{1, ..., N\}$ as the set of indices corresponding to $T$. Further, suppose that $M \subset I$ is a motif that results from one of the motif discovery algorithms described in Subsection \ref{subsection_motif_discovery}, which contains the starting points in time of the corresponding discovered subsequences of $X$ \cite{Diss_VW}. As the length of the $R$ recurrently occurring subsequences in $X$ is known in advance, the respective motif discovery algorithm discovers subsequences of this length. Therefore, the starting point in time of a subsequence of $X$ is sufficient to extract the whole corresponding subsequence from $X$. \newline
+Thus, the first step to perform experimental evaluation is to extract all subsequences from $X$ that correspond to the starting points in time that are contained in $M$. Suppose that the set $S^M$ contains these extracted subsequences. Then, each subsequence in $S^M$ is assigned the label that most often occurs across its corresponding points. Based on this assignment, $M$ is assigned the label that most often occurs accross the labeled subsequences in $S^M$. This labeling is done for each motif $M$ that is discovered for $X$ by the respective motif discovery algorithm. For the following, let $L(M)$ be the assigned label for motif $M$. \newline
+Now, define the \ac{TP} as the number of all time series points across the subsequences in $S^M$ that are labeled $L(M)$ \cite{Diss_VW}. Further, define the \ac{FN} as the number of all time series points of $X$ that are not contained in a subsequence of $S^M$, but are labeled $L(M)$ \cite{Diss_VW}. Moreover, define the \ac{FP} as the number of all time series points across the subsequences in $S^M$ that are not labeled $L(M)$ \cite{Diss_VW}. Based on these definitions, two measures for measuring the goodness of motif discovery can be defined. Both are derived from the evaluation measures called Recall and Precision \cite{Recall_Precision}:
+\begin{equation}
+\text{Motif Recall} = \frac{\ac{TP}}{\ac{TP} + \ac{FN}}
+\label{eq:motif_recall}
+\end{equation}
+\begin{equation}
+\text{Motif Precision} = \frac{\ac{TP}}{\ac{TP} + \ac{FP}}
+\label{eq:motif_precision}
+\end{equation}
+These two measures are lower bounded by zero and upper bounded by one \cite{Recall_Precision}. They should be maximized for each discovered motif for maximizing the goodness of motif discovery by maximizing the \ac{TP} and minimizing the \ac{FN}, respectively, \ac{FP} (see Figure \ref{fig:true_false_positives}) \cite{Recall_Precision}. \newline
+The Motif Recall and Motif Precision evaluate the goodness of an individual motif that results from applying one of the motif discovery algorithms described in Subsection \ref{subsection_motif_discovery} on $X$. However, these motif discovery algorithms do not exclude the possibility of discovering multiple motifs $M$ that are assigned the same label $L(M)$. Also, they do not exclude the possibility of discovering motifs M, where the majority of the subsequences in $S^M$ were created by the random walk and labeled accordingly. Hence, such motifs are assigned the label corresponding to the random walk. Let $L(M)^{rw}$ be this label. Based on these two observations, the \ac{MMDL} measures the mean number of motifs that were discovered per assigned label $L(M) \neq L(M)^{rw}$:
+\begin{equation}
+\ac{MMDL} = \frac{|\widetilde{X}^M|}{|\{L(M) \mid M \in \widetilde{X}^M\}|},
+\label{eq:mmdl}
+\end{equation}
+where for $X^M := \{M \mid M \ \text{discovered by motif discovery algorithm for} \ X\}$ it is $\widetilde{X}^{M} := \{M \in X^M \mid L(M) \neq L(M)^{rw}\}$. The \ac{MMDL} is lower bounded by one, which results when each $M \in \widetilde{X}^{M}$ is assigned a different label. \newline
+Moreover, the \ac{RWLR} measures the ratio of the discovered motifs that were assigned the label $L(M)^{rw}$:
+\begin{equation}
+\ac{RWLR} = \frac{|\{M \in X^M \mid L(M) = L(M)^{rw} \}|}{|X^M|}
+\label{eq:rwlr}
+\end{equation}
+The \ac{RWLR} is lower bounded by zero and upper bounded by one, which results when no discovered motifs for $X$ are assigned label $L(M)^{rw}$, respectively, when all discovered motifs for $X$ are assigned label $L(M)^{rw}$. \newline 
+The previous evaluation measures all consider the motifs resulted from the employed motif discovery algorithm. However, the motif discovery algorithms described in Subsection \ref{subsection_motif_discovery} do not guarantee to discover all recurrently occurring subsequences contained in $X$. Therefore, the \ac{FRSR} measures the number of discovered recurrent subsequences of $X$ compared to the total number of recurrent subsequences $R$ contained in $X$: 
+\begin{equation}
+\ac{FRSR} = \frac{|\{L(M) \mid M \in \widetilde{X}^M \}|}{R}
+\label{eq:frsr}
+\end{equation}
+The \ac{FRSR} is lower bounded by zero and upper bounded by one. The lower bound results when there is no discovered motif for $X$ that is assigned a label other than $L(M)^{rw}$. The upper bound results when for each recurrently occurring subsequence in $X$, there is at least one discovered motif assigned a label corresponding to the label of the respective recurrently occurring subsequence.
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{evaluation/motif_discovery/true_false_positives.pdf}
+\caption[Evaluation Motif Discovery - Intuition for Recall and Precision]{For instance, the red subsequence (including the dotted points at the end) is included in $S^M$ for the discovered motif $M$. This motif is assigned the label corresponding to the recurrently occurring subsequence in $X$, where the green subsequence (including the dotted points at the beginning) is a noisy copy of. A perfect motif discovery algorithm would have discovered the green subsequence. However, the employed motif discovery algorithm discovered the red subsequence as the best approximation for the green subsequence. The \ac{TP}, \ac{FN}, and \ac{FP} for this approximation are indicated for visual intuition \cite{Diss_VW}. Note that the vertical space between the two plotted subsequences is only for visual clarity.}
+\label{fig:true_false_positives}
+\end{figure}
+\subsection*{Measures of Goodness Used for Experimental Evaluation}
+Across all time series of the respective dataset used for experimental evaluation, summary statistics were computed based on the measures of goodness defined above. \newline
+Given the discovered motifs of a motif discovery algorithm for a standardized time series $X$ from the used dataset, the \ac{MMDL}, \ac{RWLR}, and \ac{FRSR} were first computed based on these discovered motifs for $X$. This was done for all of the standardized time series of the used dataset. Then, the respective mean of the corresponding values for the \ac{MMDL}, \ac{RWLR}, and \ac{FRSR} was computed and is reported in the experimental results below. \newline
+Moreover, the Motif Recall and Motif Precision was first computed based on each $M \in \widetilde{X}^{M}$. Again, this was done for all of the standardized time series $X$ of the used dataset. Then, the respective mean of the corresponding values for the Motif Recall and Motif Precision was computed and is reported in the experimental results below. The motifs assigned the label $L(M)^{rw}$ were excluded for these computations, because including them would have distorted the results. For example, a motif assigned the label $L(M)^{rw}$ could have a relatively high Motif Recall and Motif Precision. However, as motif discovery is the task of finding recurrently occurring subsequences in a given time series, it is not desired to find motifs that correspond to time series points that were created by the random walk.
+\subsection*{Configurations Used for Experimental Evaluation}
+The time series discretization algorithms described in Chapter \ref{chap:ts_discretization} were experimentally evaluated for each motif discovery algorithm described in Chapter \ref{subsection_motif_discovery}. All time series discretization algorithms, except the Persist, were evaluated based on their respective main procedure described in Chapter \ref{chap:ts_discretization}. The Persist was evaluated based on the modification of discretizing the points of the \ac{PAA} representation (i.e. the extracted means) instead of the points of the corresponding original standardized time series (see Subsection \ref{persist_modifications}). This modification was applied to increase the comparability of the Persist with respect to the other time series discretization algorithms. \newline
+Moreover, modified versions of the Matrix Profile and Brute Force motif discovery algorithm were additionally employed. In these versions, the original standardized time series were inputted without any modification (i.e. discretization) applied. These modified versions were additionally employed to benchmark the performance of the time series discretization algorithms. In the following experimental results, these modified versions are labeled as Raw. For the Random Projection motif discovery algorithm, such a modified version cannot be applied as this algorithm inherently depends on time series discretization. \newline
+Further, the employed time series discretization algorithms were evaluated based on a window length of $w = 5$ and $w = 10$ used for the \ac{PAA}. The other parameter values used for the evaluation are shown below when discussing the experimental results for the respective motif discovery algorithm.
+\subsection*{Parameter Tuning}
+Given a time series discretization algorithm and a motif discovery algorithm, their parameters need to be tuned to achieve the best performance with respect to the measures of goodness defined above. This parameter tuning involves finding an appropriate alphabet size for the time series discretization algorithm and appropriate values for the parameters of the motif discovery algorithm. \newline
+For this evaluation, parameter tuning was performed by first selecting the four time series with the smallest length from the respective dataset used. Based on those four time series, the parameter values were experimentally determined by running the respective motif discovery algorithm for the respective time series discretization algorithm multiple times for different parameter values. Note that for the modified versions labeled as Raw, only the respective motif discovery algorithm had to be run. Moreover, for the modified version of the Brute Force motif discovery algorithm labeled as Raw, the four selected time series were additionally shortened to 3,500 points due to the long execution time of this algorithm compared to the other two employed motif discovery algorithms. \newline
+For the corresponding optimization of the measures of goodness, an emphasis was put on the Motif Recall and Motif Precision. Based on the respective parameters of the employed motif discovery algorithms, a value near the upper bound of one is not as challenging to achieve for the Motif Precision as for the Motif Recall. Therefore, the objective for parameter tuning was to achieve a similar and relatively high Motif Precision for each time series discretization algorithm, while optimizing its corresponding Motif Recall. This approach was applied to increase the comparability between the time series discretization algorithms. Since for all time series discretization algorithms a similar Motif Precision is obtained, the performance of the time series discretization algorithms can be compared based on the Motif Recall. The actual parameter values that were determined based on this approach are shown in the following experimental results for the respective motif discovery algorithm. The parameters for the respective motif discovery algorithm are explained in Chapter \ref{subsection_motif_discovery}. \newline
+However, one parameter was added for all employed motif discovery algorithms. As described in Chapter \ref{subsection_motif_discovery}, when performing motif discovery, there can be trivially matching subsequences of $X$. To account for such trivially matching subsequences, the parameter $k$ was added for all employed motif discovery algorithms. This parameter is explained in Chapter \ref{subsection_motif_discovery} as well and its value was also experimentally determined within the approach described above. Based on the parameter $k$, all trivially matching subsequences of a subsequence $S$ of $X$ were excluded from being included in a motif, once $S$ was included in a motif for the respective motif discovery algorithm \cite{Random_Projection}. This procedure improved the performance of all employed motif discovery algorithms with respect to the measures of goodness, which is the reason the parameter $k$ was added.
+\subsection*{Experimental Results for the Random Projection Algorithm}
+Each of the time series discretization algorithms described in Chapter \ref{chap:ts_discretization} was experimentally evaluated with respect to the Random Projection motif discovery algorithm described in Section \ref{description_random_projection} (see Figure \ref{fig:results_random_projection} and Table \ref{tab:mmdl_random_projection}). For this evaluation, the values for the involved parameters were experimentally determined based on the parameter tuning approach explained above (see Table \ref{tab:params_random_projection}). \newline
+The results for the computed summary statistics of the \ac{RWLR} and \ac{FRSR} are consistent, as the \ac{RWLR} is 0.00 and the \ac{FRSR} is 0.99 or 1.00 for all evaluated configurations and time series discretization algorithms.
+\newpage
+\begin{table}[H]
+\centering
+\begin{tabular}{ccccccc} 
+\toprule
+ & $\mathbf{a}$ & $\mathbf{s}$ & $\mathbf{iters}$ & $\mathbf{r}$ & $\mathbf{min \textunderscore collisions}$ & $\mathbf{k}$ \\
+\midrule
+$\mathbf{w = 5}$ &  &  &  &  & \\
+\ac{SAX} & 26/26 & 10/22 & 12/12 & 1/2.2 & 0/4 & 60/100 \\
+\ac{eSAX} & 12/12 & 11/22 & 12/32 & 1/2.2 & 1/4 & 50/100 \\
+\ac{1d-SAX} & 26/26 & 11/22 & 14/18 & 1/2.2 & 1/4 & 50/100 \\
+\ac{aSAX} & 26/26 & 10/22 & 12/12 & 1/2.2 & 0/4 & 60/100 \\
+Persist & 26/26 & 10/22 & 12/12 & 1/2.2 & 0/4 & 60/100 \\
+\midrule
+$\mathbf{w = 10}$ &  &  &  &  & \\
+\ac{SAX} & 23/26 & 4/10 & 14/15 & 1/2.2 & 0/4 & 60/100 \\
+\ac{eSAX} & 8/12 & 5/10 & 12/36 & 1/2.2 & 1/4 & 50/80 \\
+\ac{1d-SAX} & 26/20 & 5/10 & 14/18 & 1/2.2 & 1/3 & 60/100 \\
+\ac{aSAX} & 23/26 & 4/10 & 14/15 & 1/2.2 & 0/4 & 60/100 \\
+Persist & 23/26 & 4/10 & 14/15 & 1/2.2 & 0/4 & 60/100 \\
+\bottomrule
+\end{tabular}
+\vspace*{0.5cm}
+\caption[Evaluation - Parameters for the Random Projection]{This table contains the parameter values used for the evaluation. In the first column, $w = 5$ and $w = 10$ indicates the window length that was used for the \ac{PAA}. For the cells of the other columns, $x/y$ represents the respective parameter values $x$ and $y$ that were used for the datasets \texttt{Motif60} and \texttt{Motif120}, respectively. Parameter $a$ in the second column represents the alphabet size used for discretization. For the \ac{1d-SAX}, the alphabet size used for discretizing the means is presented in the table. The alphabet size used for discretizing the slopes was $a = 1/2$ and $a = 3/3$ for $w = 5$ and $w = 10$, respectively. The remaining columns contain the values used for the parameters of the Random Projection motif discovery algorithm as described in Section \ref{description_random_projection}. Note that the length $l$ of the extracted subsequences by this algorithm is given by the respective fixed length of the recurrently occurring subsequences of the time series contained in \texttt{Motif60} and \texttt{Motif120}.}
+\label{tab:params_random_projection}
+\end{table}
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/random_projection/prec_rec_60_5.pdf}
+\caption{$\mathbf{w = 5},$ \texttt{\textbf{Motif60:}} For all time series discretization algorithms, the Motif Precision is 0.95 or 0.96. With a Motif Recall of 0.68, the \ac{SAX} performs best, while the \ac{eSAX} performs worst with a Motif Recall of 0.59.}
+\label{fig:rp_60_5}
+\end{subfigure}
+\hfill%
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/random_projection/prec_rec_120_5.pdf}
+\caption{$\mathbf{w = 5},$ \texttt{\textbf{Motif120:}} The \ac{1d-SAX} performs best for both measures of goodness with a Motif Precision of 0.94 and a Motif Recall of 0.68. The \ac{eSAX} performs worst for both measures of goodness with a Motif Precision of 0.93 and a Motif Recall of 0.49.}
+\label{fig:rp_120_5}
+\end{subfigure}
+\\[10pt]
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/random_projection/prec_rec_60_10.pdf}
+\caption{$\mathbf{w = 10},$ \texttt{\textbf{Motif60:}} For all time series discretization algorithms, the Motif Precision is 0.94 or 0.95. With a Motif Recall of 0.55, the \ac{eSAX} performs best, while the Persist performs worst with a Motif Recall of 0.51. Compared to Subfigure \ref{fig:rp_60_5}, the overall performance is worse, which results from the increase in the window length used for the \ac{PAA} from $w = 5$ to $w = 10$.}
+\label{fig:rp_60_10}
+\end{subfigure}
+\hfill%
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/random_projection/prec_rec_120_10.pdf}
+\caption{$\mathbf{w = 10},$ \texttt{\textbf{Motif120:}} The \ac{1d-SAX} performs best for both measures of goodness with a Motif Precision of 0.95 and a Motif Recall of 0.74. The \ac{eSAX} performs worst for both measures of goodness with a Motif Precision of 0.92 (also for the \ac{SAX} and \ac{aSAX}) and a Motif Recall of 0.49.}
+\label{fig:rp_120_10}
+\end{subfigure}
+\\[10pt]
+\begin{subfigure}[t]{0.5\textwidth}
+\centering
+\begin{tabular}{cccc}
+\cellcolor[HTML]{4682B4} & Motif Precision & \cellcolor[HTML]{FFA500} & Motif Recall \\
+\end{tabular}
+\end{subfigure}
+\caption[Evaluation - Motif Precision \& Motif Recall for the Random Projection]{This figure presents the results for the computed summary statistics of the Motif Precision and Motif Recall for each evaluated time series discretization algorithm with respect to the Random Projection motif discovery algorithm. The window length $w$ used for the \ac{PAA} and the used dataset is indicated for each subfigure.}
+\label{fig:results_random_projection}
+\end{figure}
+\begin{table}[htb]
+\centering
+\begin{tabular}{ccccc} 
+\toprule
+& \multicolumn{2}{c}{$\mathbf{w = 5}$} & \multicolumn{2}{c}{$\mathbf{w = 10}$} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+& \texttt{\textbf{Motif60}} & \texttt{\textbf{Motif120}} & \texttt{\textbf{Motif60}} & \texttt{\textbf{Motif120}} \\
+\midrule
+\ac{SAX} & 1.17 & 1.50 & 1.33 & 1.57 \\
+\ac{eSAX} & 1.24 & 1.80 & 1.32 & 1.81 \\
+\ac{1d-SAX} & 1.21 & 1.36 & 1.34 & 1.25 \\
+\ac{aSAX} & 1.23 & 1.39 & 1.36 & 1.64 \\
+Persist & 1.23 & 1.47 & 1.38 & 1.56 \\
+\bottomrule
+\end{tabular}
+\vspace*{0.5cm}
+\caption[Evaluation - MMDL for the Random Projection]{This table contains the computed summary statistics of the \ac{MMDL} for each evaluated time series discretization algorithm with respect to the Random Projection motif discovery algorithm. The window length $w$ used for the \ac{PAA} and the used dataset are indicated by the columns. Comparing the values of the \ac{MMDL} with the values of the Motif Recall presented in Figure \ref{fig:results_random_projection}, indicates a negative correlation between these two measures of goodness. Meaning that a time series discretization algorithm with a relatively high value for the Motif Recall seems likely to show a relatively low value for the MMDL, and vice versa.}
+\label{tab:mmdl_random_projection}
+\end{table}
+\subsection*{Experimental Results for the Matrix Profile Algorithm}
+Each of the time series discretization algorithms described in Chapter \ref{chap:ts_discretization} was experimentally evaluated with respect to the Matrix Profile motif discovery algorithm described in Section \ref{description_matrix_profile} (see Figure \ref{fig:results_matrix_profile} and Table \ref{tab:mmdl_matrix_profile}). For this evaluation, the values for the involved parameters were experimentally determined based on the parameter tuning approach explained above (see Table \ref{tab:params_matrix_profile}). \newline
+The results for the computed summary statistics of the \ac{RWLR} are consistent as the \ac{RWLR} is between 0.00 and 0.03 (inclusive) for all evaluated configurations and time series discretization algorithms. Moreover, the results for the computed summary statistics of the \ac{FRSR} are consistent except for one configuration. Except for this configuration, the \ac{FRSR} is between 0.96 and 1.00 (inclusive) for all evaluated configurations and time series discretization algorithms. However, in the case of the $\texttt{Motif60}$ dataset with a window length of $w = 10$ used for the \ac{PAA}, the \ac{FRSR} is between 0.55 and 0.66 (inclusive) for all time series discretization algorithms. While the \ac{eSAX} performs best with a value of 0.66, the \ac{SAX} and \ac{1d-SAX} perform worst with a value of 0.55. \newline
+The reason for this underpeformance is that a subsequence of length 60 is represented by too few encoded alphabet symbols compared to a window length of $w = 5$. Therefore, the overall performance of the Matrix Profile motif discovery algorithm is worse. 
+\newpage
+\begin{table}[H]
+\centering
+\begin{tabular}{cccc} 
+\toprule
+ & $\mathbf{a}$ & $\mathbf{r}$ & $\mathbf{k}$ \\
+\midrule
+$\mathbf{w = 5}$ &  &  & \\
+\ac{SAX} & 18/18 & 9/23 & 55/100 \\
+\ac{eSAX} & 9/12 & 12/55 & 50/100 \\
+\ac{1d-SAX} & 18/18 & 9/23 & 55/100 \\
+\ac{aSAX} & 18/18 & 9/23 & 55/100 \\
+Persist & 18/18 & 9/23 & 55/100 \\
+\midrule
+$\mathbf{w = 10}$ &  &  & \\
+\ac{SAX} & 26/16 & 7/9 & 120/100 \\
+\ac{eSAX} & 9/9 & 8/20 & 100/100 \\
+\ac{1d-SAX} & 26/16 & 7/9 & 120/100 \\
+\ac{aSAX} & 26/16 & 7/9 & 120/100 \\
+Persist & 26/16 & 7/9 & 120/100 \\
+\midrule
+Raw & -/- & 13/20 & 60/120 \\
+\bottomrule
+\end{tabular}
+\vspace*{0.5cm}
+\caption[Evaluation - Parameters for the Matrix Profile]{This table contains the parameter values used for the evaluation. In the first column, $w = 5$ and $w = 10$ indicates the window length that was used for the \ac{PAA}. For the cells of the other columns, $x/y$ represents the respective parameter values $x$ and $y$ that were used for the datasets \texttt{Motif60} and \texttt{Motif120}, respectively. Parameter $a$ in the second column represents the alphabet size used for discretization. For the \ac{1d-SAX}, the alphabet size used for discretizing the means is presented in the table. The alphabet size used for discretizing the slopes was $a = 1/1$ for $w = 5$ and $w = 10$. The remaining columns contain the values used for the parameters of the Matrix Profile motif discovery algorithm as described in Section \ref{description_matrix_profile}. Moreover, as Minkowski distance $D$, the Manhattan distance was used for all configurations. Further, note that the length $l$ of the examined subsequences in the Matrix Profile motif discovery algorithm is determined by the respective fixed length of the recurrently occurring subsequences of the time series contained in \texttt{Motif60} and \texttt{Motif120} and the used window length $w$.}
+\label{tab:params_matrix_profile}
+\end{table}
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/matrix_profile/prec_rec_60_5.pdf}
+\caption{$\mathbf{w = 5},$ \texttt{\textbf{Motif60:}} For all time series discretization algorithms, the Motif Precision is between 0.87 and 0.90 (inclusive). Moreover, the Motif Recall is between 0.79 and 0.81 (inclusive) except for the \ac{eSAX}, which obtained a Motif Recall of 0.40. Furthermore, all time series discretization algorithms are worse than the Raw version that obtained a Motif Precision of 0.94 and a Motif Recall of 0.96.}
+\label{fig:mp_60_5}
+\end{subfigure}
+\hfill%
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/matrix_profile/prec_rec_120_5.pdf}
+\caption{$\mathbf{w = 5},$ \texttt{\textbf{Motif120:}} The \ac{eSAX} performs worst for both measures of goodness with a Motif Precision of 0.92 and a Motif Recall of 0.77. For all other time series discretization algorithms, the Motif Precision is between 0.93 and 0.95 (inclusive) and the Motif Recall is between 0.94 and 0.95 (inclusive). The Raw version performs best with a Motif Recall and Motif Precision of 0.99.}
+\label{fig:mp_120_5}
+\end{subfigure}
+\\[10pt]
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/matrix_profile/prec_rec_60_10.pdf}
+\caption{$\mathbf{w = 10},$ \texttt{\textbf{Motif60:}} Compared to Subfigure \ref{fig:mp_60_5}, all time series discretization algorithm perform worse. The reason is that a subsequence of length 60 is represented by fewer encoded alphabet symbols, since a window length of $w = 10$ is used for the \ac{PAA}.}
+\label{fig:mp_60_10}
+\end{subfigure}
+\hfill%
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/matrix_profile/prec_rec_120_10.pdf}
+\caption{$\mathbf{w = 10},$ \texttt{\textbf{Motif120:}} For all time series discretization algorithms, the Motif Precision is between 0.90 and 0.92 (inclusive). The \ac{eSAX} performs worst based on a Motif Recall of 0.52, while for the other time series discretization algorithms the Motif Recall is between 0.78 and 0.80.}
+\label{fig:mp_120_10}
+\end{subfigure}
+\\[10pt]
+\begin{subfigure}[t]{0.5\textwidth}
+\centering
+\begin{tabular}{cccc}
+\cellcolor[HTML]{4682B4} & Motif Precision & \cellcolor[HTML]{FFA500} & Motif Recall \\
+\end{tabular}
+\end{subfigure}
+\caption[Evaluation - Motif Precision \& Motif Recall for the Matrix Profile]{This figure presents the results for the computed summary statistics of the Motif Precision and Motif Recall for each evaluated time series discretization algorithm and the Raw version with respect to the Matrix Profile motif discovery algorithm. The window length $w$ used for the \ac{PAA} and the used dataset is indicated for each subfigure. Note that the Raw version does not depend on the window length $w$.}
+\label{fig:results_matrix_profile}
+\end{figure}
+\begin{table}[htb]
+\centering
+\begin{tabular}{ccccc} 
+\toprule
+& \multicolumn{2}{c}{$\mathbf{w = 5}$} & \multicolumn{2}{c}{$\mathbf{w = 10}$} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+& \texttt{\textbf{Motif60}} & \texttt{\textbf{Motif120}} & \texttt{\textbf{Motif60}} & \texttt{\textbf{Motif120}} \\
+\midrule
+\ac{SAX} & 1.19 & 1.04 & 1.05 & 1.22 \\
+\ac{eSAX} & 1.71 & 1.30 & 1.25 & 1.74 \\
+\ac{1d-SAX} & 1.19 & 1.04 & 1.05 & 1.22 \\
+\ac{aSAX} & 1.18 & 1.02 & 1.05 & 1.25 \\
+Persist & 1.21 & 1.04 & 1.07 & 1.20 \\
+Raw & 1.02 & 1.00 & 1.02 & 1.00 \\
+\bottomrule
+\end{tabular}
+\vspace*{0.5cm}
+\caption[Evaluation - MMDL for the Matrix Profile]{This table contains the computed summary statistics of the \ac{MMDL} for each evaluated time series discretization algorithm and the Raw version with respect to the Matrix Profile motif discovery algorithm. The window length $w$ used for the \ac{PAA} and the used dataset are indicated by the columns. Note that the Raw version does not depend on the window length $w$. As for the evaluation based on the Random Projection motif discovery algorithm, the comparison of the values of the \ac{MMDL} with the values of the Motif Recall presented in Figure \ref{fig:results_matrix_profile}, also indicates a negative correlation between these two measures of goodness. For example, for all evaluated configurations, the Raw version obtained the highest Motif Recall and the lowest \ac{MMDL} across all evaluated algorithms. Moreover, the \ac{eSAX} obtained the lowest Motif Recall and the highest \ac{MMDL}.}
+\label{tab:mmdl_matrix_profile}
+\end{table}
+\subsection*{Experimental Results for the Brute Force Algorithm}
+Each of the time series discretization algorithms described in Chapter \ref{chap:ts_discretization} was experimentally evaluated with respect to the Brute Force motif discovery algorithm described in Section \ref{description_brute_force} (see Figure \ref{fig:results_brute_force} and Table \ref{tab:mmdl_brute_force}). For this evaluation, the values for the involved parameters were experimentally determined based on the parameter tuning approach explained above (see Table \ref{tab:params_brute_force}). \newline
+The results for the computed summary statistics of the \ac{RWLR} and \ac{FRSR} are consistent, as the \ac{RWLR} is between 0.00 and 0.02 (inclusive) and the \ac{FRSR} is between 0.95 and 1.00 (inclusive) for all evaluated configurations and time series discretization algorithms.
+\newpage
+\begin{table}[H]
+\centering
+\begin{tabular}{cccccc} 
+\toprule
+ & $\mathbf{a}$ & $\mathbf{r}$ & $\mathbf{h}$ & $\mathbf{abs \textunderscore diff}$ & $\mathbf{k}$ \\
+\midrule
+$\mathbf{w = 5}$ &  &  &  &  & \\
+\ac{SAX} & 19/19 & 10/15 & 10/15 & 1/2 & 50/60 \\
+\ac{eSAX} & 12/10 & 19/50 & 19/50 & 5/2 & 50/70 \\
+\ac{1d-SAX} & 19/19 & 14/31 & 14/31 & 2/2  & 50/70 \\
+\ac{aSAX} & 19/19 & 10/15 & 10/15 & 1/2 & 50/60 \\
+Persist & 19/19 & 10/15 & 10/15 & 1/2 & 50/60 \\
+\midrule
+$\mathbf{w = 10}$ &  &  &  &  & \\
+\ac{SAX} & 23/16 & 5/7 & 5/7 & 1/2 & 50/80 \\
+\ac{eSAX} & 14/9 & 12/25 & 12/25 & 5/2 & 50/100 \\
+\ac{1d-SAX} & 23/20 & 7/16 & 7/16 & 2/2 & 50/100 \\
+\ac{aSAX} & 23/16 & 5/7 & 5/7 & 1/2 & 50/80 \\
+Persist & 23/16 & 5/7 & 5/7 & 1/2 & 50/80 \\
+\midrule
+Raw & -/- & 8/15 & -/- & 0.5/0.5 & 30/40 \\
+\bottomrule
+\end{tabular}
+\vspace*{0.5cm}
+\caption[Evaluation - Parameters for the Brute Force]{This table contains the parameter values used for the evaluation. In the first column, $w = 5$ and $w = 10$ indicates the window length that was used for the \ac{PAA}. For the cells of the other columns, $x/y$ represents the respective parameter values $x$ and $y$ that were used for the datasets \texttt{Motif60} and \texttt{Motif120}, respectively. Parameter $a$ in the second column represents the alphabet size used for discretization. For the \ac{1d-SAX}, the alphabet size used for discretizing the means is presented in the table. The alphabet size used for discretizing the slopes was $a = 3/2$ for $w = 5$ and $w = 10$. The remaining columns contain the values used for the parameters of the Brute Force motif discovery algorithm as described in Section \ref{description_brute_force}. Moreover, as Minkowski distance $D$, the Manhattan distance was used for all configurations. Further, note that the length $l$ of the examined subsequences in the Brute Force motif discovery algorithm is determined by the respective fixed length of the recurrently occurring subsequences of the time series contained in \texttt{Motif60} and \texttt{Motif120} and the used window length $w$.}
+\label{tab:params_brute_force}
+\end{table}
+\begin{figure}[H]
+\centering
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/brute_force/prec_rec_60_5.pdf}
+\caption{$\mathbf{w = 5},$ \texttt{\textbf{Motif60:}} For the Motif Recall, all time series discretization algorithms perform worse than the Raw version that obtained 0.89. The Motif Precision for all evaluated algorithms, except the \ac{eSAX}, is between 0.92 and 0.95 (inclusive). With a Motif Recall of 0.66, the \ac{1d-SAX} performs best across the time series discretization algorithms. The \ac{eSAX} performs worst with a Motif Precision of 0.89 and a Motif Recall of 0.47.}
+\label{fig:bf_60_10}
+\end{subfigure}
+\hfill%
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/brute_force/prec_rec_120_5.pdf}
+\caption{$\mathbf{w = 5},$ \texttt{\textbf{Motif120:}} For all evaluated algorithms, the \ac{1d-SAX} performs best for both measures of goodness with a Motif Precision of 0.93 and a Motif Recall of 0.87. For both measures of goodness, the \ac{eSAX} performs worst across all evaluated algorithms with a Motif Precision of 0.87 and a Motif Recall of 0.67. However, the Raw version also obtained a Motif Precision of 0.87 and a Motif Recall of 0.68.}
+\label{fig:bf_120_5}
+\end{subfigure}
+\\[10pt]
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/brute_force/prec_rec_60_10.pdf}
+\caption{$\mathbf{w = 10},$ \texttt{\textbf{Motif60:}} The Motif Precision for all time series discretization algorithms, except the \ac{eSAX}, is between 0.87 and 0.90 (inclusive). For the Motif Recall, the \ac{1d-SAX} performs best across the time series discretization algorithms with a value of 0.52. The \ac{eSAX} performs worst with a Motif Precision of 0.86 and a Motif Recall of 0.38.}
+\label{fig:bf_60_10}
+\end{subfigure}
+\hfill%
+\begin{subfigure}[t]{0.45\textwidth}
+\includegraphics[width=\textwidth]{evaluation/motif_discovery/brute_force/prec_rec_120_10.pdf}
+\caption{$\mathbf{w = 10},$ \texttt{\textbf{Motif120:}} For all time series discretization algorithms, except the \ac{eSAX}, the Motif Precision is between 0.93 and 0.94 (inclusive). With a Motif Recall of 0.76, the \ac{1d-SAX} performs best for all evaluated algorithms. With a Motif Precision of 0.90 and a Motif Recall of 0.55, the \ac{eSAX} performs worst for all time series discretization algorithms.}
+\label{fig:bf_120_10}
+\end{subfigure}
+\\[10pt]
+\begin{subfigure}[t]{0.5\textwidth}
+\centering
+\begin{tabular}{cccc}
+\cellcolor[HTML]{4682B4} & Motif Precision & \cellcolor[HTML]{FFA500} & Motif Recall \\
+\end{tabular}
+\end{subfigure}
+\caption[Evaluation - Motif Precision \& Motif Recall for the Brute Force]{This figure presents the results for the computed summary statistics of the Motif Precision and Motif Recall for each evaluated time series discretization algorithm and the Raw version with respect to the Brute Force motif discovery algorithm. The window length $w$ used for the \ac{PAA} and the used dataset is indicated for each subfigure. Note that the Raw version does not depend on the window length $w$.}
+\label{fig:results_brute_force}
+\end{figure}
+\begin{table}[htb]
+\centering
+\begin{tabular}{ccccc} 
+\toprule
+& \multicolumn{2}{c}{$\mathbf{w = 5}$} & \multicolumn{2}{c}{$\mathbf{w = 10}$} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5}
+ & \texttt{\textbf{Motif60}} & \texttt{\textbf{Motif120}} & \texttt{\textbf{Motif60}} & \texttt{\textbf{Motif120}} \\
+\midrule
+\ac{SAX} & 1.48 & 1.43 & 1.65 & 1.26 \\
+\ac{eSAX} & 1.57 & 1.36 & 1.72 & 1.49 \\
+\ac{1d-SAX} & 1.36 & 1.11 & 1.55 & 1.17 \\
+\ac{aSAX} & 1.42 & 1.33 & 1.67 & 1.30 \\
+Persist & 1.53 & 1.41 & 1.70 & 1.23 \\
+Raw & 1.12 & 1.65 & 1.12 & 1.65 \\
+\bottomrule
+\end{tabular}
+\vspace*{0.5cm}
+\caption[Evaluation - MMDL for the Brute Force]{This table contains the computed summary statistics of the \ac{MMDL} for each evaluated time series discretization algorithm and the Raw version with respect to the Brute Force motif discovery algorithm. The window length $w$ used for the \ac{PAA} and the used dataset are indicated by the columns. Note that the Raw version does not depend on the window length $w$. As for the evaluation based on the previous two motif discovery algorithm, the comparison of the values of the \ac{MMDL} with the values of the Motif Recall presented in Figure \ref{fig:results_brute_force}, also indicates a negative correlation between these two measures of goodness.}
+\label{tab:mmdl_brute_force}
+\end{table}

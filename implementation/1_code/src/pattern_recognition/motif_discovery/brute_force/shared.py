@@ -101,6 +101,7 @@ def _find_best_motif(subsequences, assigned, dist_threshold, num_diff_threshold,
 
     best_count = 0
     best_motif = []
+    best_trivial = []
     initial = [(idx, subsequence)
                for idx, subsequence in enumerate(subsequences)
                if idx not in assigned]
@@ -108,6 +109,7 @@ def _find_best_motif(subsequences, assigned, dist_threshold, num_diff_threshold,
     for current_subsequence in subsequences:
         # will contain self-match
         motif = []
+        trivial = []
         filtered = [(idx, subsequence) for idx, subsequence in initial
                     if distance.minkowski(current_subsequence, subsequence, p) <= dist_threshold]
         filtered = [(idx, subsequence) for idx, subsequence in filtered
@@ -123,8 +125,9 @@ def _find_best_motif(subsequences, assigned, dist_threshold, num_diff_threshold,
         if len(motif) > best_count:
             best_count = len(motif)
             best_motif = motif
+            best_trivial = trivial
 
-    return best_motif
+    return best_motif, best_trivial
 
 
 def _do_brute_force(df_ts, start, end, p, dist_threshold, num_diff_threshold,
@@ -193,14 +196,15 @@ def _do_brute_force(df_ts, start, end, p, dist_threshold, num_diff_threshold,
         # indexes that are already assigned to a motif
         assigned = set()
         while True:
-            best_motif = _find_best_motif(subsequences, assigned, dist_threshold,
-                                          num_diff_threshold, p, ignore_trivial,
-                                          exclusion_zone, hamming_threshold)
+            best_motif, best_trivial = _find_best_motif(subsequences, assigned, dist_threshold,
+                                                        num_diff_threshold, p, ignore_trivial,
+                                                        exclusion_zone, hamming_threshold)
             if len(best_motif) <= 1:
                 break
             ts_motifs.append(best_motif)
             # motifs shall be disjoint
             assigned.update(best_motif)
+            assigned.update(best_trivial)
 
         motifs_lst.append(ts_motifs)
 

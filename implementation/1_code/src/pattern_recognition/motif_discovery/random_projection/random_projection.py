@@ -4,7 +4,6 @@ import numpy as np
 
 from approximation.paa import PAA
 from discretization.sax.sax import SAX
-from discretization.sax.one_d_sax import OneDSAX
 from utils import constant_segmentation_overlapping, constant_segmentation
 from discretization.sax.abstract_sax import linearize_sax_word
 from pattern_recognition.motif_discovery.utils import _remove_trivial
@@ -429,14 +428,16 @@ def _get_motifs(df_norm, collisions_lst, radius, min_collisions, start, end,
 
                 # promising motifs need to be similar to both of the two
                 # current matching subsequences (i.e. high count for both)
-                promising_motifs = list(set(fst_promising_motifs).intersection(snd_promising_motifs))
+                promising_motifs = list(set(fst_promising_motifs).union(snd_promising_motifs))
                 promising_motifs = [idx for idx in promising_motifs if idx not in excluded]
                 # lower bounding property of 'MINDIST' compared to Euclidean
                 # distance is not fulfilled for 1d-SAX
-                if not isinstance(sax_variant, OneDSAX):
+                if isinstance(sax_variant, SAX):
                     promising_motifs = _filter_mindist(df_sax_lst[i], sax_variant.alphabet_size, promising_motifs, idxs, len_subsequence, radius)
                 motifs = _filter_eucl_dist(df_norm.iloc[:, i], start, end, promising_motifs, fst_matching_subsequence, snd_matching_subsequence, radius)
                 motif.extend(motifs)
+                # current matching subsequences are duplicates
+                motif = list(set(motif))
                 motif.sort()
                 if ignore_trivial:
                     motif, trivial = _remove_trivial(motif, exclusion_zone)

@@ -12,9 +12,10 @@ Further, note that the breakpoints $\beta_j$ split the standard normal distribut
 \begin{figure}[htb]
 \centering
 \includegraphics[width=0.8\textwidth]{discretization/sax/discretization.pdf}
-\caption[Symbolic Aggregate Approximation - Discretization]{The original time series is discretized based on its PAA representation with an alphabet size of $a = 4$. It is assumed that the original time series follows the standard normal distribution $\mathcal{N}(0,1)$. Based on this assumption the discretization intervals along its amplitude are determined \cite{SAX_Lin_first}. Using lowercase letters from the Latin alphabet for the alphabet symbols, the resulting discretized representation of the original time series is: \textcolor{red}{bcddcdbaaaabcbbbbaa}.}
+\caption[Symbolic Aggregate Approximation - Discretization]{The original time series is discretized based on its PAA representation with an alphabet size of $a = 4$. It is assumed that the original time series follows the standard normal distribution $\mathcal{N}(0,1)$. Based on this assumption the discretization intervals along its amplitude are determined \cite{SAX_Lin_first}. Using lowercase letters from the Latin alphabet for the alphabet symbols, the resulting discretized representation of the original time series is: \texttt{bcddcdbaaaabcbbbbaa}.}
 \label{fig:SAX_discretization}
 \end{figure}
+\newpage
 \subsection*{Role of the Alphabet Size as Input Parameter} \label{parameter_alphabet_size}
 From the definition of the breakpoints as $a$-quantiles of the standard normal distribution, it follows that the alphabet size $a$ is equal to the number of discretization intervals. Furthermore, if the alphabet size $a$ increases the distance $\beta_j - \beta_{j-1}$ between two adjacent breakpoints decreases, because each discretization interval $[\beta_{j-1}, \beta_j)$ covers $\frac{1}{a}$ of the area under the curve of the standard normal distribution \cite{SAX_Lin_first}. Therefore, the range of continuous values that each alphabet symbol covers becomes narrower when the alphabet size $a$ increases. \newline
 Assuming that the means $\overline{x}_i \ (1 \leq i \leq n)$ of the \ac{PAA} representation $\overline{X}$ follow the standard normal distribution, each discretization interval contains $\frac{1}{a}$ of the total number of means $\overline{x}_i$. Thus, the number of means in each discretization interval decreases when the alphabet size $a$ increases. \newline
@@ -27,30 +28,30 @@ All in all, increasing the alphabet size results in a more granular discretizati
 \caption[Symbolic Aggregate Approximation - Effect of Alphabet Size]{In the left plot, the breakpoints for an alphabet size of $a = 5$ are shown. In the right plot, the breakpoints for an alphabet size of $a = 8$ are shown. For instance, the range of continuous values the alphabet symbol \textcolor{red}{c} covers is narrower for $a = 5$ compared to $a = 8$. Thus, the discretization shown in the right plot is more granular by using more alphabet symbols.}
 \label{fig:SAX_alphabet_size}
 \end{figure}
-\subsection*{Distance Measures}
+\subsection*{Distance Measures} \label{dist_measure_mindist}
 One usage of distance measures in the context of time series is to measure the similarity between a given time series and each time series stored in a database in order to retrieve similar time series from it \cite{Survey_Esling}. There are two reasons why such a procedure is more time efficient with \ac{SAX} representations than  with the corresponding original time series. \newline
 The first reason is that time series databases storing original time series are more likely to need to be stored on disk while those storing \ac{SAX} representations are more likely to be held in main memory due to less memory requirements \cite{SAX_Lin}. Therefore, accessing \ac{SAX} representations is more likely to be faster than accessing original representations. \newline
-The second reason is that the time efficiency of distance computations between two time series is dependent on the number of points these time series have. Therefore, distance computations between \ac{SAX} representations are more likely to be faster than between the corresponding original time series due to less number of points respectively alphabet symbols \cite{SAX_Lin}. \newline
+The second reason is that the time efficiency of distance computations between two time series is dependent on the number of points these time series have. Therefore, distance computations between \ac{SAX} representations are faster than between the corresponding original time series due to less number of points respectively alphabet symbols \cite{SAX_Lin}. \newline
 For these two reasons, the following time efficient procedure can be applied based on \ac{SAX} representations \cite{SAX_Lin, Faloutsos_Bounding_Lemma}. \newline
 Suppose two time series databases $DB := \{X \mid X \ time \ series \ of \ length \ N \geq 1\}$ and $DB^{SAX} := \{\hat{X} \mid X \in DB\}$ where each time series $X$ is stored in its \ac{SAX} representation $\hat{X}$ of length $ 1 \leq n \leq N$.  Further, assume that $DB$ is stored on disk while $DB^{SAX}$ is held in main memory due to less memory needed for $DB^{SAX}$ than for $DB$. \newline
 Now given a time series $X^*$ of length $N$, the set of time series 
-\begin{center}
-$DB^* := \{X \mid X \in DB, \ Eucl(X^*, X) \leq r\}$
-\end{center}
-shall be found, where $Eucl$ is the Euclidean distance between two original time series and $r \geq 0$ is a given real number distance. The Euclidean distance is assumed to be the true distance between two original time series and is one possible distance measure for this procedure \cite{Survey_Esling}. \newline
+\begin{equation*}
+DB^* := \{X \mid X \in DB, \ D_2(X^*, X) \leq r\}
+\end{equation*}
+shall be found, where $D_2$ is the Euclidean distance between two original time series and $r \geq 0$ is a given real number distance. The Euclidean distance is assumed to be the true distance between two original time series and is one possible distance measure for this procedure \cite{Survey_Esling}. \newline
 The first step for finding $DB^*$ is to discretize $X^*$ based on the \ac{SAX} in order to be able to compare its \ac{SAX} representation $\hat{X}^*$ with the \ac{SAX} representations in $DB^{SAX}$. \newline
 The next step is to define a distance measure $MINDIST$ that measures the distance between any two \ac{SAX} representations and lower-bounds the Euclidean distance for the corresponding original time series (see Figure \ref{fig:Euclidean_Mindist}):
 \begin{equation}
-MINDIST(\hat{X}^*,\hat{X}) \leq Eucl(X^*,X)
+MINDIST(\hat{X}^*,\hat{X}) \leq D_2(X^*,X)
 \label{eq:lowerBounding}
 \end{equation}
-With $MINDIST$, the \ac{SAX} representations in $DB^{SAX}$ can be filtered by discarding those that definitely do not fullfill $Eucl(X^*,X) \leq r$. Then, the resulting filtered database is $DB^{SAX'} := \{\hat{X} \mid \ X \in DB, \ MINDIST(\hat{X}^*,\hat{X}) \leq r\}$. This filtering property of $MINDIST$ follows from Equation \ref{eq:lowerBounding}, because each $\hat{X} \in DB^{SAX}$ with $MINDIST(\hat{X}^*,\hat{X}) > r$ can be neglected, since it is:
-\begin{center}
-$MINDIST(\hat{X}^*,\hat{X}) > r \implies Eucl(X^*,X) > r$
-\end{center}
-Equation \ref{eq:lowerBounding} also guarantees no false dismissals during this filtering process. Hence, there is no $\hat{X} \in DB^{SAX}$ that is filtered out, but fullfills $Eucl(X^*,X) \leq r$. This property of $MINDIST$ is known as the Lower Bounding Lemma \cite{Faloutsos_Bounding_Lemma}. \newline
-However, after this filtering process there can be still some $\hat{X} \in DB^{SAX'}$ where $Eucl(X^*,X) > r$ holds, because $MINDIST$ underestimates the Euclidean distance according to Equation \ref{eq:lowerBounding}. \newline
-Hence, the last step to find $DB^*$ is to filter these false positives out of $DB^{SAX'}$. This is done by retrieving the original time series $X$  of all $\hat{X} \in DB^{SAX'}$ from $DB$ and computing $Eucl(X^*,X)$. $DB^*$ then results from keeping each $X \in DB$ that fulfills $Eucl(X^*,X) \leq r$. \newline
+With $MINDIST$, the \ac{SAX} representations in $DB^{SAX}$ can be filtered by discarding those that definitely do not fullfill $D_2(X^*,X) \leq r$. Then, the resulting filtered database is $DB^{SAX'} := \{\hat{X} \mid \ X \in DB, \ MINDIST(\hat{X}^*,\hat{X}) \leq r\}$. This filtering property of $MINDIST$ follows from Equation \ref{eq:lowerBounding}, because each $\hat{X} \in DB^{SAX}$ with $MINDIST(\hat{X}^*,\hat{X}) > r$ can be neglected, since it is:
+\begin{equation}
+MINDIST(\hat{X}^*,\hat{X}) > r \implies D_2(X^*,X) > r
+\end{equation}
+Equation \ref{eq:lowerBounding} also guarantees no false dismissals during this filtering process. Hence, there is no $\hat{X} \in DB^{SAX}$ that is filtered out, but fulfills $D_2(X^*,X) \leq r$. This property of $MINDIST$ is known as the Lower Bounding Lemma \cite{Faloutsos_Bounding_Lemma}. \newline
+However, after this filtering process there can be still some $\hat{X} \in DB^{SAX'}$ where $D_2(X^*,X) > r$ holds, because $MINDIST$ underestimates the Euclidean distance according to Equation \ref{eq:lowerBounding}. \newline
+Hence, the last step to find $DB^*$ is to filter these false positives out of $DB^{SAX'}$. This is done by retrieving the original time series $X$  of all $\hat{X} \in DB^{SAX'}$ from $DB$ and computing $D_2(X^*,X)$. $DB^*$ then results from keeping each $X \in DB$ that fulfills $D_2(X^*,X) \leq r$. \newline
 Note that only during this last step, the original time series $X$ are retrieved from $DB$ that is stored on disk. Further, not every $X \in DB$ is retrieved, but only those that are in the filtered $DB^{SAX'}$. Before this last step, the distances are computed on the \ac{SAX} representations $\hat{X}$ based on $MINDIST$. These \ac{SAX} representations are held in main memory and are represented by less number of alphabet symbols compared to the number of points of the original time series. \newline
 The question that now remains is what distance measure $MINDIST$ that lower-bounds the Euclidean distance shall be used. One important characteristic of the \ac{SAX} is that it provides such a lower bounding distance measure. It is defined as \cite{SAX_Lin}:
 \begin{equation}
@@ -69,12 +70,22 @@ dist(\alpha_i, \alpha_j) :=
 where $\alpha_i, \alpha_j$ are alphabet symbols and $\beta_i, \beta_j$ are breakpoints.
 \begin{figure}[htb]
 \centering
-\includegraphics[width=0.8\textwidth]{discretization/sax/euclidean_mindist.pdf}
-\caption[Symbolic Aggregate Approximation - Euclidean vs. MINDIST]{In the plot above, the Euclidean distance is indicated by connecting each pair of points of the original time series $X^*$ and $X$ that belong to the same point in time \cite{SAX_Lin}. Below this plot, the $MINDIST$ of the corresponding \ac{SAX} representations $\hat{X}^*$ and $\hat{X}$ is indicated by connecting the pairwise symbols whose distance shall be measured \cite{SAX_Lin}. The $MINDIST$ shall lower-bound the Euclidean distance: $MINDIST(\hat{X}^*, \hat{X}) \leq Eucl(X^*, X)$.}
+\begin{subfigure}[t]{0.8\textwidth}
+\includegraphics[width=\textwidth]{discretization/sax/euclidean_mindist_1.pdf}
+\caption{The Euclidean distance is indicated by connecting each pair of points of the original time series $X^*$ and $X$ that belong to the same point in time \cite{SAX_Lin}.}
+\label{fig:Euclidean_Mindist_1}
+\end{subfigure}
+\begin{subfigure}[t]{0.8\textwidth}
+\includegraphics[width=\textwidth]{discretization/sax/euclidean_mindist_2.pdf}
+\caption{The $MINDIST$ of the corresponding \ac{SAX} representations $\hat{X}^*$ and $\hat{X}$ is indicated by connecting the pairwise symbols whose distance shall be measured \cite{SAX_Lin}.}
+\label{fig:Euclidean_Mindist_2}
+\end{subfigure}
+\vspace*{0.2cm}
+\caption[Symbolic Aggregate Approximation - Euclidean vs. MINDIST]{A visual intuition for the $MINDIST$ and the Euclidean distance. The $MINDIST$ shall lower-bound the Euclidean distance: $MINDIST(\hat{X}^*, \hat{X}) \leq D_2(X^*, X)$ \cite{SAX_Lin}.}
 \label{fig:Euclidean_Mindist}
 \end{figure}
 \subsection*{Time Complexity}
-The first step of the \ac{SAX} involves the computation of the breakpoints. A static lookup table that contains the $a$-quantiles of the standard normal distribution can be used to retrieve the ascending sorted breakpoints for a given alphabet size $a$ \cite{SAX_Lin}. Thus, the time complexity for computing the breakpoints for a given alphabet size is $\mathcal{O}(1)$. Note that the breakpoints $\beta_0 = -\infty$ and $\beta_a = +\infty$ are not actually needed. Therefore, $a$ alphabet symbols can be represented by $a-1$ breakpoints. \newline
+The first step of the \ac{SAX} involves the computation of the breakpoints. A static lookup table that contains the $a$-quantiles of the standard normal distribution can be used to retrieve the ascending sorted breakpoints for a given alphabet size $a$ \cite{SAX_Lin}. Thus, the time complexity for computing the breakpoints for a given alphabet size is $\mathcal{O}(1)$. Note that the breakpoints $\beta_0 = -\infty$ and $\beta_a = +\infty$ are not actually needed. Therefore, $a$ alphabet symbols can be represented by $a-1$ breakpoints, since it is $|B| = a + 1$. \newline
 The final step is to map each of the $n$ means of the \ac{PAA} representation to one alphabet symbol. Based on the retrieved ascending sorted breakpoints, a binary search can be applied for the mapping of each mean. Thus, the time complexity for this step is $\mathcal{O}(n \cdot log_{2}(a-1)) = \mathcal{O}(n)$ for a given alphabet size $a$. \newline
 Therefore, the time complexity of the discretization process with the \ac{SAX} is $\mathcal{O}(n)$.
 Taken the time complexity of $\mathcal{O}(N)$ of the \ac{PAA} into account, the total time complexity of the \ac{SAX} is $\mathcal{O}(n) + \mathcal{O}(N) = \mathcal{O}(N)$, because it is $N \geq n$ \cite{SFA}.

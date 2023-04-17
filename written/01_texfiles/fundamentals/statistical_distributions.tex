@@ -1,0 +1,42 @@
+\subsection{Statistical Concepts}
+\subsection*{Random Variable}
+$X: S \rightarrow \mathbb{R}$ is called a random variable, when $S$ is the set of all possible outcomes of a random event \cite{Standardization}. As an example, consider tossing a coin, then it could be $X: \{heads,tails\} \rightarrow \{-1,1\}$. When $Pr \geq 0$ is a probability measure defined on $S$, probabilities $Pr(X = x) = Pr(\{s \in S \mid X(s) = x\})$ can be determined \cite{Standardization}. \newline
+$X$ is called a discrete random variable if $Pr(X = x) > 0$ holds for at most as many different $x \in R' \subset \mathbb{R}$, where $R'$ is a countable set \cite{Standardization}. A set is countable if there exists a bijection to $\mathbb{N}$. In this case, the probability mass function of $X$ is defined as $f_d: \mathbb{R} \rightarrow [0,1]$ with $f_d(x) = Pr(X = x)$ \cite{Standardization}. Note that it is $f_d(x) = 0$ if there is no $s \in S$ with $X(s) = x$. The probability mass function of $X$ defines the discrete probability distribution of $X$ \cite{Standardization}. \newline
+$X$ is called a continuous random variable if there exists a function $f_c: \mathbb{R} \rightarrow [0,+\infty)$ with $f_c \geq 0$, such that for every interval $I \subseteq \mathbb{R}$, the probability of $X = x$ for $x \in I$ is the integral of $f_c$ over $I$ \cite{Standardization}. The function $f_c$ is called the probability density function of $X$. In this case, it is for example for the bounded and closed interval $[a,b] \subseteq \mathbb{R}$ \cite{Standardization}:
+\begin{equation}
+Pr(a \leq X \leq b) = \int_{a}^{b} f_c(x) \ dx
+\label{eq:continuous_random_var}
+\end{equation}
+\subsection*{Discrete Uniform Distribution}
+Let $X$ be a discrete random variable and $a,b \in \mathbb{N}$ with $a \leq b$. If $Pr(X = x)$ is the same for each $x \in \{a, ..., b\}$, then $X$ is uniformly distributed for $\{a, ..., b\}$ \cite{Standardization}. In this case, the discrete probability distribution of $X$ is defined by the following probability mass function of $X$ \cite{Standardization}:
+\begin{equation}
+f_d(x) =
+\begin{cases}
+\frac{1}{b - a + 1}, & x \in \{a, ..., b\} \\
+0, & \text{otherwise}
+\end{cases}
+\label{eq:uniform_distribution}
+\end{equation}
+\subsection*{Gaussian Distribution}
+Let $X$ be a continuous random variable. $X$ follows the Gaussian distribution $\mathcal{N}(\mu,\sigma^2)$ with mean $\mu \in \mathbb{R}$ and variance $\sigma^2 \ (\sigma > 0)$ if for each $x \in \mathbb{R}$ it is \cite{Standardization}:
+\begin{equation}
+f_c(x) = \frac{1}{\sqrt{2\pi\sigma^2}} e^{-\frac{(x-\mu)^2}{2\sigma^2}}
+\label{eq:gaussian_distribution}
+\end{equation}
+It is written as $X \sim \mathcal{N}(\mu,\sigma^2)$. For $\mu = 0$ and $\sigma = 1$, the resulting Gaussian distribution $\mathcal{N}(0,1)$ is called the standard normal distribution \cite{Standardization}.
+\subsection*{Quantile Function}
+Let $X$ be a (discrete or continuous) random variable. The cumulative distribution function of $X$ is defined for $x \in (-\infty, +\infty)$ as \cite{Standardization}:
+\begin{equation}
+F(x) = Pr(X \leq x)
+\label{eq:cumulative_distribution_function}
+\end{equation}
+Define the function $Q: (0,1) \rightarrow \mathbb{R}$ with $Q(p) = x$, where $x$ is the smallest value that fulfills $F(x) \geq p$. The function $Q$ is called the quantile function of $X$ and $Q(p)$ is called the $p$ quantile of $X$, which is equivalent to the $100 \cdot p$ percentile of $X$ \cite{Standardization}.
+\subsection*{Standardization}
+Let $X = (x_1, ..., x_N) \in \mathbb{R}^N \ (N \geq 1)$ be a point. Applying standardization on $X$ involves transforming each $x_i \ (1 \leq i \leq N)$ to $\hat{x}_i$ \cite{Standardization_Concept}:
+\begin{equation}
+\hat{x}_i = \frac{x_i - \mu_X}{\sigma_X},
+\label{eq:standardization}
+\end{equation}
+where $\mu_X$ is the mean of all $x_i$, and $\sigma_X$ is the standard variation of all $x_i$. The resulting standardized point is then represented by $\hat{X} = (\hat{x}_1, ..., \hat{x}_N)$. Further, it is $\mu_{\hat{X}} = 0$ and $\sigma_{\hat{X}} = 1$. \newline
+Applying standardization on multiple points $X$ improves the comparability of these points as they are transformed to the same scale and unit \cite{Standardization_Concept}. After standardization, each $x_i$ is measured in terms of the number of standard deviations it deviates from the mean $\mu_X$.
+

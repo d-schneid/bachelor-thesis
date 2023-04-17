@@ -1,0 +1,21 @@
+\chapter{Motif Discovery} \label{subsection_motif_discovery}
+Motif discovery is the task of finding all recurrently occurring subsequences in a given time series \cite{Survey_Esling}. More formally, let $X = x_1, ..., x_N$ be a time series of length $N \ge 1$. Then, the task of motif discovery is to find all subsequences $S = s_1, ..., s_M$ of length $1 \leq M < N$ that recurrently occur in $X$ (see Figure \ref{fig:intro_motifs}) \cite{Survey_Esling}. \newline
+The determination of recurrently occurring subsequences in $X$ involves a similarity measurement between subsequences based on a given similarity measure $D$ (e.g. the Euclidean distance) and a given similarity distance $r \geq 0$ \cite{Motif_Definitions}. Two subsequences $S_1$ and $S_2$ of $X$ are then called matching subsequences if and only if \mbox{$D(S_1,S_2) \leq r$} \cite{Motif_Definitions}. Moreover, trivially matching subsequences of $X$ are defined as matching subsequences whose starting points in time are not further apart than a given $k \geq 0$ points in time \cite{Motif_Definitions}. Based on matching subsequences, recurrently occurring subsequences in $X$ can be found as explained for the following motif discovery algorithms. Further note that the recurrent occurrence of a subsequence in a given time series is relative to the given similarity measure and the given similarity distance.
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{pattern_recognition/motif_discovery/motif_discovery.pdf}
+\caption[Motif Discovery - Recurrently Occurring Subsequence]{The three plotted subsequences of the original standardized time series show a similar pattern. Hence, this pattern represents a recurrently occurring subsequence in the original standardized time series \cite{Motif_Definitions}.}
+\label{fig:intro_motifs}
+\end{figure}
+\input{01_texfiles/pattern_recognition/random_projection}
+\newpage
+\input{01_texfiles/pattern_recognition/matrix_profile}
+\input{01_texfiles/pattern_recognition/brute_force}
+
+
+
+
+
+
+
+

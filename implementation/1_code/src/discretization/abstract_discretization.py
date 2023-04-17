@@ -26,9 +26,9 @@ def _get_alphabet(alphabet_size):
 class AbstractDiscretization(ABC):
 
     def __init__(self, alphabet_size=3):
-        if alphabet_size > NUM_ALPHABET_SYMBOLS or alphabet_size < 1:
-            raise ValueError(f"The size of an alphabet needs to be between "
-                             f"1 (inclusive) and {NUM_ALPHABET_SYMBOLS} (inclusive)")
+        #if alphabet_size > NUM_ALPHABET_SYMBOLS or alphabet_size < 1:
+        #    raise ValueError(f"The size of an alphabet needs to be between "
+        #                     f"1 (inclusive) and {NUM_ALPHABET_SYMBOLS} (inclusive)")
         self.alphabet_size = alphabet_size
         self.bits_per_symbol = math.ceil(np.log2(self.alphabet_size))
         self.alphabet = _get_alphabet(self.alphabet_size)

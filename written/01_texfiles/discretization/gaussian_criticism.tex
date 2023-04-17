@@ -1,12 +1,13 @@
 \subsection{Criticism - Assumption of Standard Normal Distribution}
 For the \ac{SAX}, \ac{eSAX}, and \ac{1d-SAX}, there are two problems in connection with the assumption that the original time series follows the standard normal distribution $\mathcal{N}(0,1)$ after applying standardization.
-\subsection*{Myth about Time Series Standardization}
+\subsection*{Considerations about Time Series Standardization}
 The first problem relates to the statement from the literature that a time series follows the standard normal distribution after applying standardization, regardless of the distribution of the corresponding non-standardized time series \cite{SAX_Lin}. The argumentation for this statement is based on an illustration of normal probability plots for eight selected different time series with a length of 128 points each. But, examining standardized time series from the UCR Time Series Classification Archive \cite{UCR_Archive} by testing them for the standard normal distribution based on a statistical test contradicts this statement (see Table \ref{tab:shapiro_UCR}). Thus, this statement is not true. However, given that a non-standardized time series follows a Gaussian distribution, it is proofed that the corresponding standardized time series follows the standard normal distribution \cite{Standardization}.
 \begin{table}[htb]
 \centering
-\begin{tabular}{|c|c|c|c|}
-\hline
-\textbf{Training Dataset} & \textbf{Number} & \textbf{Length} & \textbf{Fraction} \\ \hline
+\begin{tabular}{cccc} 
+\toprule
+\textbf{Training Dataset} & \textbf{Number} & \textbf{Length} & \textbf{Fraction} \\
+\midrule
 SmoothSubspace & 150 & 15 & 0.23 \\
 SyntheticControl & 300 & 60 & 0.56 \\
 SonyAIBORobotSurface1 & 20 & 70 & 0.60 \\
@@ -19,7 +20,8 @@ FacesUCR & 200 & 131 & 0.76 \\
 Plane & 105 & 144 & 0.84 \\
 SonyAIBORobotSurface2 & 27 & 65 & 0.85 \\
 SwedishLeaf & 500 & 128 & 0.88 \\
-OSULeaf & 200 & 427 & 0.96 \\ \hline
+OSULeaf & 200 & 427 & 0.96 \\
+\bottomrule
 \end{tabular}
 \vspace*{0.5cm}
 \caption[UCR Time Series - Testing for Standard Normal Distribution]{For each training dataset from the UCR Time Series Classification Archive \cite{UCR_Archive} that contains equal-length time series of $\leq 5000$ points, the standardized time series are tested to follow the standard normal distribution with the Shapiro-Wilk test. Based on this test, this table shows the fraction of standardized time series in each training dataset for that the null hypothesis to follow the standard normal distribution can be rejected, based on a p-value of < 0.05. The 100 remaining examined training datasets where this fraction is $\geq$ 0.99 are omitted for brevity. All in all, based on the employed Shapiro-Wilk test, 51,745 out of 61,953 examined time series do not follow the standard normal distribution after applying standardization.}

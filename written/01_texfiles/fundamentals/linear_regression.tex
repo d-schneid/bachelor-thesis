@@ -1,0 +1,21 @@
+\subsection{Linear Regression}
+Let $X_1, ..., X_k \ (k \geq 1)$ and $Y$ be random variables. Then, the regression function of $Y$ on $X_1, ..., X_k$ is given by \cite{Standardization}:
+\begin{equation}
+E(Y \mid x_1, ..., x_k) = w_0 + w_1 \cdot x_1 + ... + w_k \cdot x_k,
+\label{eq:regression_function}
+\end{equation}
+where $E(Y \mid x_1, ..., x_k)$ is the conditional expectation of $Y$ for given values $x_1, ..., x_k$ of $X_1, ..., X_k$. The regression function assumes a linear relationship between the expected value of $Y$ and the $x_1, ..., x_k$, which is controlled by the regression coefficients $w_0, ..., w_k$ \cite{Standardization}. These regression coefficients are unknown parameters whose values need to be estimated based on given data points. \newline
+For the simple linear regression of $Y$ on a single random variable $X$, the regression function reduces to $E(Y \mid x) = w_0 + w_1 \cdot x$, where $w_0$ is the unknown intercept, $w_1$ is the unknown slope, and $x$ is a given value of $X$ \cite{Standardization}. For the estimation of the values $\hat{w}_0$ and $\hat{w}_1$ for the unknown parameters $w_0$ and $w_1$, respectively, the objective is to minimize the sum of squared errors based on $n \geq 1$ given data points $(x_1,y_1), ..., (x_n,y_n)$ \cite{Standardization}:
+\begin{equation}
+\min\limits_{w_0, w_1} Q(w_0,w_1) = \sum_{i}^{n}[y_i - E(Y|x_i)]^2
+\label{eq:sum_of_squares_regression}
+\end{equation}
+Let $\overline{x}$ and $\overline{y}$ be the mean of all $x_i$ and $y_i \ (1 \leq i \leq n)$, respectively. Then, the values that minimize the sum of squared errors are obtained by \cite{Standardization}:
+\begin{equation}
+\hat{w}_1 = \frac{\sum_{i}^{n}(y_i - \overline{y})(x_i - \overline{x})}{\sum_{i}^{n}(x_i - \overline{x})^2}
+\label{eq:ols_parameters_one}
+\end{equation}
+\begin{equation}
+\hat{w}_0 = \overline{y} - \hat{w}_1 \cdot \overline{x}
+\label{eq:ols_parameters_zero}
+\end{equation}

@@ -6,6 +6,7 @@ from utils import constant_segmentation_overlapping
 from pattern_recognition.motif_discovery.utils import _encode_symbols
 from pattern_recognition.utils import get_linearized_encoded_sax
 from pattern_recognition.motif_discovery.matrix_profile.shared import _find_nearest_neighs
+from pattern_recognition.motif_discovery.utils import _remove_trivial
 
 
 """
@@ -233,7 +234,7 @@ def _build_motif(sax_word_split_encoded, idxs, start, end, max_distance,
 
 def _build_ts_motifs(sax_word_linearized_encoded, sax_word_split_encoded,
                      sax_variant, nearest_neighs, start, end, max_distance,
-                     normalize, p):
+                     normalize, p, exclusion_zone):
     """
     Compute all motifs of the given SAX representation.
 
@@ -304,8 +305,10 @@ def _build_ts_motifs(sax_word_linearized_encoded, sax_word_split_encoded,
                              sax_word_linearized_encoded, fst_neigh_linearized_encoded,
                              snd_neigh_linearized_encoded, start_linearized,
                              end_linearized, normalize, float(p))
+        motif.sort()
+        motif, trivial = _remove_trivial(motif, exclusion_zone)
+        assigned.update(trivial)
         if motif:
-            motif.sort()
             ts_motifs.append(motif)
             assigned.update(motif)
 
@@ -313,7 +316,7 @@ def _build_ts_motifs(sax_word_linearized_encoded, sax_word_split_encoded,
 
 
 def do_matrix_profile_discretized(df_norm, window_size, sax_variant, num_compare_segments,
-                                  max_distance, normalize=False, p=1.0, gap=1):
+                                  max_distance, exclusion_zone, normalize=False, p=1.0, gap=1):
     """
     Execute the algorithm based on the computation of the Matrix Profile for
     motif discovery in a time series based on the subsequences of its symbolic
@@ -387,7 +390,9 @@ def do_matrix_profile_discretized(df_norm, window_size, sax_variant, num_compare
         # nearest neighbors are declared as potential motifs
         nearest_neighs = _compute_nearest_neighs(sax_word_split_encoded, num_compare_segments, float(max_distance), normalize, float(p))
         sax_word_linearized_encoded = df_sax_linearized_encoded.iloc[:, idx]
-        ts_motifs = _build_ts_motifs(sax_word_linearized_encoded, sax_word_split_encoded, sax_variant, nearest_neighs, start, end, max_distance, normalize, p)
+        ts_motifs = _build_ts_motifs(sax_word_linearized_encoded, sax_word_split_encoded,
+                                     sax_variant, nearest_neighs, start, end,
+                                     max_distance, normalize, p, exclusion_zone)
         motifs_lst.append(ts_motifs)
 
     # adjust start and end for indexes in original time series

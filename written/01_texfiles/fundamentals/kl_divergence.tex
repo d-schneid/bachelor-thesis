@@ -1,0 +1,11 @@
+\subsection{Kullback-Leibler Divergence} \label{KL_Div_Subsection}
+Let $P = \{p_1, ..., p_k\}, Q = \{q_1, ..., q_k\} \ (k \geq 1)$ be two discrete probability distributions, meaning that $0 \leq p_i, q_i \leq 1 \ (1 \leq i \leq k)$ are probabilities and the sum of all $p_i$ and $q_i$, respectively, equals one. The \ac{KL} for comparing $P$ and $Q$ is defined as \cite{Persist}:
+\begin{equation}
+KL(P,Q) = \sum_{i=1}^{k}p_i \cdot log_2(\frac{p_i}{q_i})
+\label{eq:kl_divergence_def}
+\end{equation}
+The \ac{KL} is only defined for $p_i, q_i > 0$ due to the logarithm in Equation \ref{eq:kl_divergence_def}. It measures the difference between $P$ and $Q$ \cite{KL_Divergence_Book}. The larger the value of the \ac{KL}, the more different are $P$ and $Q$, and vice versa. Moreover, the \ac{KL} is non-negative and it is $KL = 0$ if and only if $p_i = q_i$ \cite{KL_Divergence_Book}. The \ac{KL} is not symmetric, which means that it is $KL(P,Q) \neq KL(Q,P)$ in general. However, taking the mean of both directions results in a symmetric version of the \ac{KL}, which is called the \ac{SKL} \cite{Persist}:
+\begin{equation}
+SKL(P,Q) = \frac{1}{2} \cdot (KL(P,Q) + KL(Q,P))
+\label{eq:symm_kl_divergence_def}
+\end{equation}

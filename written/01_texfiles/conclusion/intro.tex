@@ -1,0 +1,20 @@
+\chapter{Summary \& Outlook} \label{last_chapter}
+\section{Summary}
+In this thesis, the time series discretization approaches called \ac{SAX}, \ac{eSAX}, \ac{1d-SAX}, \ac{aSAX}, and Persist were evaluated. \newline
+The reconstruction error was used as a metric to quantify and evaluate the goodness of these approaches with respect to a feature-preserving discretized representation of the corresponding original time series. For the reconstruction error, the deviation between the original time series and a numerical reconstruction of the corresponding discretized time series is measured. Qualitatively, the results are as follows:
+
+\textbf{\ac{eSAX} \& \ac{1d-SAX}}: \newline
+The \ac{eSAX} and \ac{1d-SAX} perform best across all evaluated time series discretization approaches and configurations. Compared to the other evaluated time series discretization approaches, the \ac{eSAX} and \ac{1d-SAX} benefit from using more information for the discretization of time series.
+
+\textbf{\ac{SAX} \& \ac{aSAX}}: The results for the \ac{SAX} and \ac{aSAX} are similar across all evaluated configurations except for one. For time series with a specific structure, the \ac{aSAX} performs better than the \ac{SAX}. The reason is that the \ac{aSAX} adapts its discretization process to the respective time series at hand, while the \ac{SAX} does not adapt its discretization process.
+
+\textbf{Persist}:
+The Persist performs worst across all evaluated time series discretization approaches and configurations, except for the configuration for that the \ac{aSAX} performs better than the \ac{SAX} as explained above. For this configuration, the Persist performs similar to the \ac{aSAX}, as it adapts its discretization process to the time series data at hand, as well.
+
+In addition to measuring the reconstruction error, three motif discovery algorithms were applied to evaluate the applicability of the examined time series discretization approaches as a preprocessing step for those motif discovery algorithms. Qualitatively, the \ac{SAX}, \ac{aSAX}, and Persist perform similar across all evaluated configurations, while the \ac{eSAX} performs worst. Moreover, the results indicate that the \ac{1d-SAX} slightly outperforms all other evaluated time series discretization approaches for one of the three applied motif discovery algorithms. For the other two, the \ac{1d-SAX} performs similar to the \ac{SAX}, \ac{aSAX}, and Persist. \newline
+For comparison, two of the three applied motif discovery algorithms were also executed with the original time series as input (i.e. without any preprocessing step). Overall, these results indicate that the precision with which recurrently occurring patterns in time series are detected only decreases slightly, if at all, when using the time series discretization algorithms for preprocessing. However, the number of recurrently occurring patterns detected in time series decreases more and more often.
+\section{Outlook}
+In this thesis, a time series is assumed to be univariate, meaning that for each observed point in time, there is only one observation \cite{Survey_Esling}. However, time series can also be multivariate, meaning that for each observed point in time there are multiple, but the same number of observations, where each observation belongs to a different univariate time series \cite{Survey_Esling}. Therefore, a possible extension of the evaluation in this thesis, could comprise time series discretization approaches that are applicable for multivariate time series. \newline
+Moreover, in this thesis, it is assumed that the observations of a time series are observed at uniformly spaced points in time. This assumption could be relaxed by evaluating time series discretization approaches that are applicable for time series with observations that are observed at irregularly spaced points in time. \newline
+Lastly, this thesis focuses on motif discovery with respect to time series pattern recognition. This scope could be extended by incorporating other tasks of time series pattern recognition like anomaly detection \cite{Survey_Esling}. 
+ 

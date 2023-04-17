@@ -96,9 +96,9 @@ class OneDSAX(AbstractSAX):
     """
 
     def __init__(self, alphabet_size_avg=3, alphabet_size_slope=3, var_slope=None):
-        if alphabet_size_slope > NUM_ALPHABET_SYMBOLS or alphabet_size_slope < 1:
-            raise ValueError(f"The size of an alphabet needs to be between "
-                             f"1 (inclusive) and {NUM_ALPHABET_SYMBOLS} (inclusive)")
+        #if alphabet_size_slope > NUM_ALPHABET_SYMBOLS or alphabet_size_slope < 1:
+         #   raise ValueError(f"The size of an alphabet needs to be between "
+          #                   f"1 (inclusive) and {NUM_ALPHABET_SYMBOLS} (inclusive)")
         super().__init__(alphabet_size=alphabet_size_avg)
         self.name = "1d-SAX"
 

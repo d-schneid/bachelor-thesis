@@ -1,0 +1,32 @@
+\section{Memory Requirements}
+Let $X = x_1, ..., x_N$ be a standardized time series of length $N \geq 1$. Further, suppose that $1 \leq n \leq N$ is the number of subsequences the \ac{PAA} extracted from $X$ for applying one of the time series discretization algorithms described in Chapter \ref{chap:ts_discretization}. Let $\hat{X}$ be the resulting discretized time series corresponding to $X$. Note that for the \ac{SAX}, \ac{aSAX}, and Persist, $n$ is the length of $\hat{X}$. For the \ac{1d-SAX} and \ac{eSAX}, $\hat{X}$ has a length of $2n$ and $3n$ as they discretize two and three features per extracted subsequence, respectively. Now, define the Compression Factor as \cite{Comparison_SAX}:
+\begin{equation}
+\text{Compression Factor} = \frac{n}{N}
+\label{eq:compression_factor}
+\end{equation}
+Further, assume that storing one (real-valued) time series point of $X$ requires 64 bits and storing one alphabet symbol of $\hat{X}$ requires $\lceil \log_{2}(a) \rceil$ bits, where $a \geq 2$ is the alphabet size used for discretization \cite{Comparison_SAX}. \newline
+Remember that for the \ac{1d-SAX}, two separate alphabets are used \cite{1d-SAX}. One for discretizing the means and one for discretizing the slopes of the subsequences extracted by the \ac{PAA}. Therefore, storing the respective alphabet symbols may require a different amount of bits when the two alphabets have different sizes. \newline
+Based on the above assumptions, let $B(X) = 64 \cdot N$ be the total amount of bits required for storing $X$ and let $B(\hat{X})$ be the total amount of bits required for storing $\hat{X}$. Then, define the Compression Ratio as \cite{Comparison_SAX}:
+\begin{equation}
+\text{Compression Ratio} = \frac{B(\hat{X})}{B(X)} \cdot 100
+\label{eq:compression_ratio}
+\end{equation}
+Note that due to the different amount of discretized features per extracted subsequence by the \ac{PAA}, $B(\hat{X})$ is different for the time series discretization algorithms described in Chapter \ref{chap:ts_discretization}. For the \ac{SAX}, \ac{aSAX}, and Persist, it is $B(\hat{X}) = \lceil \log_{2}(a) \rceil \cdot n$ \cite{Comparison_SAX}. Further, for the \ac{1d-SAX} it is $B(\hat{X}) = \lceil \log_{2}(a_m) \rceil \cdot n \ + \lceil \log_{2}(a_s) \rceil \cdot n$, where $a_m \geq 2$ is the alphabet size used for discretizing the means and $a_s \geq 2$ is the alphabet size used for discretizing the slopes of the subsequences extracted by the \ac{PAA}. Lastly, it is $\lceil \log_{2}(a) \rceil \cdot 3n$ for the \ac{eSAX}.
+\subsection*{Analysis for Different Window Lengths}
+Assuming that $N$ is divisible by $n$, it follows from the definition that the Compression Factor is the reciprocal of the window length used for the \ac{PAA} in the first step of the time series discretization algorithms described in Chapter \ref{chap:ts_discretization}. Therefore, given an alphabet size used for discretizing, the Compression Ratio can be analyzed for discretizing $X$ based on different window lengths used for the \ac{PAA} and the different time series discretization algorithms (see Figure \ref{fig:compression_ratio_window}). Note that the Persist was analyzed based on the modification of discretizing the points of the \ac{PAA} representation (i.e. the extracted means) instead of the points of the corresponding original standardized time series (see Subsection \ref{persist_modifications}). This was done to increase the comparability of the Persist with respect to the other time series discretization algorithms, as the Persist is employed with this modification throughout the evaluation in this thesis. \newline
+From the theoretical analysis above, it follows that the Compression Ratio corresponding to the \ac{eSAX} is three times larger than that corresponding to the \ac{SAX}, \ac{aSAX}, and Persist, and one and a half times larger than that corresponding to the \ac{1d-SAX}, when it is $a_m = a = a_s$. Moreover, the Compression Ratio corresponding to the \ac{1d-SAX} is two times larger than that corresponding to the \ac{SAX}, \ac{aSAX}, and Persist, when it is $a_m = a = a_s$.
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{evaluation/memory/compression_ratio_window.pdf}
+\caption[Memory Requirements - Effect of Window Length]{For this plot, the Compression Factor (i.e. the window length used for the \ac{PAA}) is varied for a given alphabet size of $a = 16 = a_m = a_s$. The plot reflects the theoretical analysis above. Furthermore, it shows for example that for a Compression Factor of 1, the Compression Ratio is around 6-7\% for the \ac{SAX}/\ac{aSAX}/Persist (red dot). This means that storing all alphabet symbols of $\hat{X}$ requires around 6-7\% of the bits that are required for storing all points of $X$. This analysis holds regardless of the actual length $N$ of $X$.}
+\label{fig:compression_ratio_window}
+\end{figure}
+\newpage
+\subsection*{Analysis for Different Alphabet Sizes}
+From the theoretical analysis above, it also follows that the Compression Ratio is dependent on the alphabet size $a$. Therefore, given a Compression Factor, the Compression Ratio can be analyzed for different alphabet sizes (see Figure \ref{fig:compression_ratio_alphabet}). Note that the Persist was analyzed based on the modification as described for the analysis for different window lengths above.
+\begin{figure}[htb]
+\centering
+\includegraphics[width=0.8\textwidth]{evaluation/memory/compression_ratio_alphabet.pdf}
+\caption[Memory Requirements - Effect of Alphabet Size]{For this plot, the alphabet size $a = a_m = a_s$ used for discretization is varied for a given Compression Factor of $1/5$ (i.e. a window length of $5$ used for the \ac{PAA}). For each alphabet size $a \in (2^{p-1},2^p] \ (p \geq 2)$, the Compression Ratio equals that corresponding to $2^p$, since all of the $a$ alphabet symbols can be represented by $p$ bits. As soon as the alphabet size is greater than $2^p$, the Compression Ratio increases to that corresponding to $2^{p+1}$.}
+\label{fig:compression_ratio_alphabet}
+\end{figure}

@@ -1,0 +1,75 @@
+\newpage
+\section{Random Projection} \label{description_random_projection}
+Let $X = x_1, ..., x_N$ be a standardized time series of length $N \geq 1$. Then, the first step of the Random Projection motif discovery algorithm is to extract subsequences of $X$ with an overlapping sliding window of a given length $1 \leq l \leq N$ (see Subfigure \ref{fig:extract_subsequences}) \cite{Random_Projection}. These extracted subsequences are then individually discretized based on one of the time series discretization algorithms described in Chapter \ref{chap:ts_discretization}. The selected time series discretization algorithm is employed with the same parameters for each extracted subsequence. This also includes that the adaptive breakpoints used for discretization in the \ac{aSAX} and Persist are not computed individually for each extracted subsequence, but for the whole standardized time series $X$. Thus, the discretized subsequences are comparable with each other. \newline
+Based on these discretized subsequences, a matrix $\hat{M}_{p \times q} \ (p,q \geq 1)$ is then created (see Subfigure \ref{fig:discretized_matrix}) \cite{Random_Projection}. In each row, this matrix contains one of the discretized subsequences, while in each column it contains one of the alphabet symbols of the respective discretized subsequence. As each subsequence of $X$ is extracted and discretized based on the same parameters, they all consist of the same number of alphabet symbols. Moreover, the row-wise order of the discretized subsequences within $\hat{M}_{p \times q}$ corresponds to their order of extraction. Such that the discretized subsequence that was extracted first is contained in the first row and the discretized subsequence that was extracted last is contained in the last row. \newline
+Based on the constructed matrix $\hat{M}_{p \times q}$, the random projection procedure is employed \cite{Random_Projection}. First, a given number of $0 \leq s < q$ columns are randomly selected. These randomly selected columns act as a mask as they are hidden and modify $\hat{M}_{p \times q}$ to $\hat{M}_{p \times q'}$ with $q' := q-s$ (see Subfigure \ref{fig:random_projection_matrix}). Second, a collision matrix $C_{p \times p}$ is created that contains a row and a column for each of the $p$ discretized subsequences (see Subfigure \ref{fig:collision_matrix}). In cell $(i,j) \ (1 \leq i,j \leq p)$, this collision matrix contains the number of collisions of the remaining alphabet symbols of the discretized subsequences $i$ and $j$ in $\hat{M}_{p \times q'}$, when performing the random selection of $s$ columns $iters \geq 1$ times on $\hat{M}_{p \times q}$. The discretized subsequences $i$ and $j$ collide if their alphabet symbols are equal for each column of $\hat{M}_{p \times q'}$. Note that $C_{p \times p}$ is a symmetric matrix. Further note that for the \ac{1d-SAX} and {eSAX}, $s$ is the number of two respectively three adjacent columns as they use two respectively three alphabet symbols for discretizing a subsequence extracted by the \ac{PAA}. \newline
+Based on the collision matrix $C_{p \times p}$, matching subsequences are likely to have a relatively high number of collisions and a relatively high number of collisions indicates matching subsequences \cite{Random_Projection}. Therefore, the next step is to use the collision matrix $C_{p \times p}$ as a filter that indicates which extracted subsequences of $X$ shall be examined for finding matching subsequences and which not \cite{Random_Projection}. First, the extracted subsequences that correspond to the largest number of collisions in $C_{p \times p}$ are retrieved. Let $S_{1}^*$ and $S_{2}^*$ be those subsequences. Then, the Euclidean distance $D_2(S_{1}^*,S_{2}^*)$ is computed and compared to a given similarity distance $r \geq 0$. If $D_2(S_{1}^*,S_{2}^*) \leq r$ holds, $S_{1}^*$ and $S_{2}^*$ are matching subsequences and form a so called tentative motif. This tentative motif is expanded to a motif by adding each other extracted subsequence of $X$ that is a matching subsequence to $S_{1}^*$ or $S_{2}^*$. \newline
+To find those other extracted subsequences while avoiding costly memory accesses, the collision matrix $C_{p \times p}$ is used as a filter again \cite{Random_Projection}. Only those extracted subsequences of $X$ that correspond to discretized subsequences whose number of collisions with the discretized subsequences corresponding to $S_{1}^*$ or $S_{2}^*$ is above a given threshold $min \textunderscore collisions \geq 1$ are retrieved. Let $S_3$ be such an extracted subsequence, then it is included into the tentative motif formed by $S_{1}^*$ and $S_{2}^*$ if and only if it is a matching subsequence to $S_{1}^*$ or $S_{2}^*$ (i.e. $D_2(S_{1}^*,S_{3}) \leq r$ or $D_2(S_{2}^*,S_{3}) \leq r$). The final motif is then the one that contains $S_{1}^*$ and $S_{2}^*$ along with all of their matching subsequences. This motif building procedure is done iteratively, while all extracted subsequences that are already included in a motif cannot be selected for future motifs \cite{Random_Projection}. In each iteration, the two extracted subsequences corresponding to the highest number of collisions in the current iteration are retrieved until all remaining numbers of collisions are below $min \textunderscore collisions$ or no more extracted subsequences are available to be included in a motif. \newline
+Note that for the \ac{SAX}, even less extracted subsequences may need to be retrieved by applying the procedure based on the $MINDIST$ described in Subsection \ref{dist_measure_mindist} for discretized subsequences as an additional filter \cite{Random_Projection}.
+\begin{figure}
+\centering
+\begin{subfigure}[b]{0.45\textwidth}
+\includegraphics[width=\textwidth]{pattern_recognition/motif_discovery/random_projection/extract_subsequences.pdf}
+\caption{Three exemplary subsequences of the standardized time series $X$ that are extracted by an overlapping sliding window.}
+\label{fig:extract_subsequences}
+\end{subfigure}
+\hfill%
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \begin{tabular}{c|c|c|c|c|}
+    \cline{2-5}
+    0 & \textcolor{red}{b} & \textcolor{red}{a} & \textcolor{red}{b} & \textcolor{red}{c} \\
+    ... & ... & ... & ... & ... \\
+    40 & \textcolor{orange}{a} & \textcolor{orange}{a} & \textcolor{orange}{b} & \textcolor{orange}{b} \\
+    ... & ... & ... & ... & ... \\
+    85 & \textcolor{purple}{b} & \textcolor{purple}{b} & \textcolor{purple}{b} & \textcolor{purple}{a} \\
+    \cline{2-5}
+  \end{tabular}
+    \caption{The matrix $\hat{M}_{p \times q}$ with $p = 86$ extracted subsequences that were discretized into $q = 4$ alphabet symbols.}
+    \label{fig:discretized_matrix}
+  \end{subfigure}
+\\[10pt]
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \begin{tabular}{c|c|>{\columncolor{gray!25}}c|c|>{\columncolor{gray!25}}c|}
+    \hhline{~|----|}
+    0 & \textcolor{red}{b} &  & \textcolor{red}{b} & \\
+    ... & ... & \phantom{...} & ... & \phantom{...} \\
+    40 & \textcolor{orange}{a} & & \textcolor{orange}{b} & \\
+    ... & ... &  & ... &  \\
+    85 & \textcolor{purple}{b} & \phantom{...} & \textcolor{purple}{b} & \phantom{...} \\
+    \hhline{~|----|}
+  \end{tabular}
+    \caption{For instance, the second and fourth column are randomly selected to be hidden in the first iteration. Then, the first and last discretized subsequence collide.}
+    \label{fig:random_projection_matrix}
+  \end{subfigure}
+ \hfill%
+\begin{subfigure}[b]{0.45\textwidth}
+    \centering
+    \begin{tabular}{c|c|c|c|c|c|}
+	\multicolumn{1}{@{}c}{} & \multicolumn{1}{c}{0} & \multicolumn{1}{c}{...} & \multicolumn{1}{c}{40} & \multicolumn{1}{c}{...} & \multicolumn{1}{c}{85} \\    
+    \hhline{~|-----|}
+    0 & \cellcolor{gray!25}\phantom{...} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} \\
+    \hhline{~|-----|}
+    ... & ... & \cellcolor{gray!25}\phantom{...} & \cellcolor{gray!25} & \cellcolor{gray!25} & \cellcolor{gray!25} \\
+    \hhline{~|-----|}
+    40 & 0 & ... & \cellcolor{gray!25}\phantom{...} & \cellcolor{gray!25} & \cellcolor{gray!25} \\
+    \hhline{~|-----|}
+    ... & ... & ... & ... & \cellcolor{gray!25}\phantom{...} & \cellcolor{gray!25} \\
+    \hhline{~|-----|}
+    85 & 1 & ... & 0 & ... & \cellcolor{gray!25}\phantom{...} \\
+    \hhline{~|-----|}
+  \end{tabular}
+    \caption{The symmetric collision matrix $C_{p \times p}$ with $p = 86$ after the first of $iters$ iterations. It contains the collision of the first and last discretized subsequence.}
+    \label{fig:collision_matrix}
+  \end{subfigure}
+\caption[Random Projection - Steps and Data Structures]{Steps and data structures that are employed by the Random Projection motif discovery algorithm \cite{Random_Projection}.}
+\label{fig:blablaal}
+\end{figure}
+
+
+
+
+
+
+

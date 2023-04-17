@@ -8,15 +8,20 @@
 \graphicspath{{97_graphics/}}
 \newcommand*{\GraphicPath}{./97_graphics}%
 
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
 \usepackage{array}
 \usepackage{longtable}
 \usepackage{multicol}
 \usepackage{ragged2e}
 \usepackage{verbatim}
 \usepackage{caption}
+\usepackage{colortbl}
+\usepackage{hhline}
 \usepackage{subcaption}
 \usepackage[nameinlink]{cleveref}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage[printonlyused]{acronym} % list of acronyms
 \usepackage{algorithmic}
 % \usepackage{algorithm}
@@ -39,7 +44,10 @@
 	\tableofcontents{}
 	\listoffigures {}
 	\listoftables {}
+	\begingroup
+	\let\cleardoublepage\clearpage
 	\input{01_texfiles/acronyms}
+	\endgroup
 	\listofalgorithms
 \cleardoublepage	
 \pagenumbering{arabic}
@@ -47,8 +55,12 @@
 			%\input{01_texfiles/Kapitel_Einleitung}
 			%\input{03_texfiles/Kapitel_Projektmanagement}
 			%\input{01_texfiles/Kapitel_MathematischeGrundlagen}
+			\input{01_texfiles/introduction/intro}
+			\input{01_texfiles/fundamentals/intro}			
 			\input{01_texfiles/discretization/intro}
+			\input{01_texfiles/pattern_recognition/intro}
 			\input{01_texfiles/evaluation/intro}
+			\input{01_texfiles/conclusion/intro}
 \printbibliography
 
 \end{document}

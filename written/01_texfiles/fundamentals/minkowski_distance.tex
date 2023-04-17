@@ -1,0 +1,16 @@
+\subsection{Minkowski Distance}
+Let $X = (x_1, ..., x_N), \ Y = (y_1, ..., y_N) \in \mathbb{R}^N \ (N \geq 1)$ be two points. The Minkowski distance for these two points is defined for $p \geq 1$ as \cite{Minkowski_Distance}:
+\begin{equation}
+D_p(X,Y) = \left(\sum_{i=1}^{N} |x_i - y_i|^p\right)^{1/p}
+\label{eq:minkowski_distance}
+\end{equation}
+In this thesis, two instantiations of the Minkowski distance are used. The first one results from setting $p = 1$ and is called the Manhattan distance \cite{Minkowski_Distance}:
+\begin{equation}
+D_1(X,Y) = \sum_{i=1}^{N} |x_i - y_i|
+\label{eq:manhattan_distance}
+\end{equation}
+The second one results from setting $p = 2$ and is called the Euclidean distance \cite{Minkowski_Distance}:
+\begin{equation}
+D_2(X,Y) = \sqrt{\sum_{i=1}^{N} (x_i - y_i)^2}
+\label{eq:manhattan_distance}
+\end{equation}
